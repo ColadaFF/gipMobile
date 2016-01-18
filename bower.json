@@ -1,0 +1,17 @@
+{
+  "name": "HelloIonic",
+  "private": "true",
+  "devDependencies": {
+    "ionic": "driftyco/ionic-bower#1.2.4"
+  },
+  "dependencies": {
+    "pouchdb": "~5.2.0",
+    "angular-pouchdb": "~4.1.0",
+    "angular-formly": "~7.3.9",
+    "lodash": "~4.0.0",
+    "angular-formly-templates-ionic": "~1.2.2",
+    "moment": "~2.11.1",
+    "immutable": "~3.7.6",
+    "ngToast": "ngtoast#~1.5.6"
+  }
+}

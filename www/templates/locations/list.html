@@ -1,0 +1,12 @@
+<ion-view view-title="Ubicaciones">
+  <ion-content>
+    <div class="list card">
+      <a href="#" class="item item-icon-left" ng-repeat="location in vm.locations">
+        <i class="icon ion-home"></i>
+        <h2>{{location.key.location.value}}</h2>
+        <p>Cupos: {{location.key.sits}}</p>
+        <p>Estado: {{location.key.status}}</p>
+      </a>
+    </div>
+  </ion-content>
+</ion-view>
