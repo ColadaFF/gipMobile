@@ -23,15 +23,6 @@
    });
    ngModule.factory("$lists", function (pouchDB, async) {
       var listsDB = pouchDB('lists');
-      listsDB.createIndex({
-         index: {
-            fields: ['name', 'key', 'value']
-         }
-      }).then(result => {
-         console.log("Created index for lists", result);
-      }).catch(err => {
-         console.log("Error creating index for lists", err);
-      });
       return listsDB;
    });
    ngModule.factory("$user", function (pouchDB) {

@@ -1,4 +1,4 @@
-angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'formlyIonic', 'pouchdb'])
+angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'formlyIonic', 'pouchdb', 'ionic-toast'])
 
    .run(function ($ionicPlatform) {
       $ionicPlatform.ready(function () {
@@ -43,7 +43,8 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'formlyIonic', 
                   controller: 'locationsCtlr',
                   controllerAs: 'vm',
                   resolve: {
-                     locations: [function () {
+                     locations: ["locationServices",function (locationServices) {
+                        return locationServices.getLocationsBasicData();
                      }]
                   }
                }

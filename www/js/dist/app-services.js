@@ -31,19 +31,25 @@
 
 (function () {
    "use strict";
-   var ngModule = angular.module('sigip');
+   var ngModule = angular.module('sigip'),
+      PouchDB = window.PouchDB;
+   PouchDB.plugin(window.pouchdbFind);
    ngModule.constant('moment', moment);
    ngModule.constant('_', _);
+   ngModule.constant('async', async);
    ngModule.constant('Immutable', Immutable);
    ngModule.constant("API_URL", 'http://192.168.2.12:3000/api');
    ngModule.constant("API_HOST", 'http://192.168.2.12:3000');
-   ngModule.constant("COUCHDB_URL", 'http://192.168.1.28:5984');
+   ngModule.constant("COUCHDB_URL", 'http://192.168.99.100:5984');
 }());
 
 (function () {
    "use strict";
    var ngModule = angular.module('sigip');
-   ngModule.factory("locationServices", function($program_locations) {
+   ngModule.factory("locationServices", function ($program_locations, COUCHDB_URL, $log, async, $q, listServices, _) {
+      listServices.syncAllLocations()
+         .on('complete', $log.info);
+
       function getLocations() {
          return $program_locations.allDocs({
             include_docs: true
@@ -51,6 +57,9 @@
       }
 
       function getLocationsBasicData() {
+         var deferred = $q.defer(),
+            locationCollection = [];
+
          function map(doc) {
 
             emit({
@@ -62,25 +71,52 @@
             });
          }
 
-         return $program_locations.query(map);
+         $program_locations.query(map)
+            .then(function (data) {
+               console.log(data);
+               async.each(data.rows, function (location, cb) {
+                  listServices.getListValueById(_.get(location, 'location'))
+                     .then(function (listValue) {
+                        console.log(listValue, "d1 ");
+                        var mergedDoc = _.set(location, 'location', listValue);
+                        locationCollection.push(mergedDoc);
+                        cb();
+                     })
+                     .catch(cb)
+               }, function (err) {
+                  if (err) {
+                     deferred.reject(err);
+                  } else {
+                     deferred.resolve(locationCollection);
+                  }
+               });
+            })
+            .catch(function (reason) {
+               deferred.reject(reason);
+            });
+         return deferred.promise;
+      }
+
+      function syncAllLocations() {
+         $program_locations.sync(COUCHDB_URL + "/sigip_locations", {
+            live: true,
+            retry: true
+         });
       }
 
       return {
          getLocations: getLocations,
-         getLocationsBasicData: getLocationsBasicData
+         getLocationsBasicData: getLocationsBasicData,
+         syncAllLocations: syncAllLocations
       };
    });
 }());
 
 (function () {
    "use strict";
-   ngModule.factory("$$messages", function ($mdToast) {
+   angular.module('sigip').factory("$$messages", function (ionicToast) {
       function simpleMessage(message) {
-         $mdToast.show(
-            $mdToast.simple()
-               .textContent(message)
-               .hideDelay(3000)
-         );
+         ionicToast.show(message, 'bottom', true, 2500);
       }
 
       return {
@@ -170,18 +206,60 @@
    });
    ngModule.factory("$lists", function (pouchDB, async) {
       var listsDB = pouchDB('lists');
-      listsDB.createIndex({
-         index: {
-            fields: ['name', 'key', 'value']
-         }
-      }).then(result => {
-         console.log("Created index for lists", result);
-      }).catch(err => {
-         console.log("Error creating index for lists", err);
-      });
       return listsDB;
    });
    ngModule.factory("$user", function (pouchDB) {
       return pouchDB('users');
+   });
+}());
+
+(function () {
+   "use strict";
+   var ngModule = angular.module('sigip');
+   ngModule.factory("listServices", function ($lists, COUCHDB_URL, $log) {
+      console.log('call');
+      $lists.sync(COUCHDB_URL + "/sigip_lists", {
+            live: true,
+            retry: true
+         })
+         .on('change', function (info) {
+            $log.info(info);
+         })
+         .on('complete', function (info) {
+            $log.info(info);
+         }).on('error', function (err) {
+         $log.error(err);
+      });
+
+      function getLocations() {
+         return $lists.allDocs({
+            include_docs: true
+         });
+      }
+
+      function getListValues(name) {
+         return $lists.find({
+            selector: {name: name}
+         });
+      }
+
+      function getListValueById(_id) {
+         return $lists.get(_id);
+      }
+
+      function syncAllLocations() {
+         return $lists.sync(COUCHDB_URL + "/sigip_lists", {
+            live: true,
+            retry: true
+         })
+
+      }
+
+      return {
+         getLists: getLocations,
+         getListValues: getListValues,
+         syncAllLocations: syncAllLocations,
+         getListValueById: getListValueById
+      };
    });
 }());

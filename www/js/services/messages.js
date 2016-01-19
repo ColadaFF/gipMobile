@@ -1,12 +1,8 @@
 (function () {
    "use strict";
-   ngModule.factory("$$messages", function ($mdToast) {
+   angular.module('sigip').factory("$$messages", function (ionicToast) {
       function simpleMessage(message) {
-         $mdToast.show(
-            $mdToast.simple()
-               .textContent(message)
-               .hideDelay(3000)
-         );
+         ionicToast.show(message, 'bottom', true, 2500);
       }
 
       return {
