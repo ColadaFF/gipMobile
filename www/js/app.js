@@ -1,6 +1,6 @@
-angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'formlyIonic', 'pouchdb', 'ionic-toast'])
+angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 'pouchdb', 'ionic-toast'])
 
-   .run(function ($ionicPlatform) {
+   .run(function ($ionicPlatform, formlyConfig) {
       $ionicPlatform.ready(function () {
          // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
          // for form inputs)
@@ -14,6 +14,7 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'formlyIonic', 
             StatusBar.styleDefault();
          }
       });
+
    })
 
    .config(function ($stateProvider, $urlRouterProvider) {
@@ -39,12 +40,45 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'formlyIonic', 
             url: '/locations',
             views: {
                'menuContent': {
-                  templateUrl: 'templates/landing.html',
+                  templateUrl: 'templates/locations/list.html',
                   controller: 'locationsCtlr',
                   controllerAs: 'vm',
                   resolve: {
-                     locations: ["locationServices",function (locationServices) {
+                     locations: ["locationServices", function (locationServices) {
                         return locationServices.getLocationsBasicData();
+                     }]
+                  }
+               }
+            }
+         })
+
+         .state('app.participants', {
+            url: '/participants',
+            views: {
+               'menuContent': {
+                  templateUrl: 'templates/participants/list.html',
+                  controller: 'participantsCtlr',
+                  controllerAs: 'vm',
+                  resolve: {
+                     participants: ["participantServices", "$redux", '_', function (participantServices, $redux, _) {
+                        var location = $redux.getAction('selectedLocation');
+                        return participantServices.getParticipants(_.get(location, '_id'));
+                     }]
+                  }
+               }
+            }
+         })
+
+         .state('app.participant', {
+            url: '/participant',
+            views: {
+               'menuContent': {
+                  templateUrl: 'templates/participants/participant_details.html',
+                  controller: 'participantDetails',
+                  controllerAs: 'vm',
+                  resolve: {
+                     participant: ["$redux", function ($redux) {
+                        return $redux.getAction('selectedParticipant');
                      }]
                   }
                }

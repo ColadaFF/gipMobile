@@ -11,9 +11,9 @@
          index: {
             fields: ['programLocation']
          }
-      }).then(result => {
+      }).then(function (result) {
          console.log("Created index for participants", result);
-      }).catch(err => {
+      }).catch(function (err) {
          console.log("Error creating index for participants", err);
       });
       return participantDB;
@@ -21,8 +21,17 @@
    ngModule.factory("$contacts", function (pouchDB, COUCHDB_URL) {
       return pouchDB('contacts');
    });
-   ngModule.factory("$lists", function (pouchDB, async) {
+   ngModule.factory("$lists", function (pouchDB) {
       var listsDB = pouchDB('lists');
+      listsDB.createIndex({
+         index: {
+            fields: ['name']
+         }
+      }).then(function (result) {
+         console.log("Created index for lists", result);
+      }).catch(function (err) {
+         console.log("Error creating index for lists", err);
+      });
       return listsDB;
    });
    ngModule.factory("$user", function (pouchDB) {

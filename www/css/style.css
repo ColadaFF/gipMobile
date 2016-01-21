@@ -4,3 +4,7 @@ img.landing-logo {
   margin-left: 25%;
   margin-top: 25%;
 }
+
+.panel-has-header{
+   top: 64px !important;
+}

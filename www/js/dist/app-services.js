@@ -40,15 +40,14 @@
    ngModule.constant('Immutable', Immutable);
    ngModule.constant("API_URL", 'http://192.168.2.12:3000/api');
    ngModule.constant("API_HOST", 'http://192.168.2.12:3000');
-   ngModule.constant("COUCHDB_URL", 'http://192.168.99.100:5984');
+   ngModule.constant("COUCHDB_URL", 'http://52.23.181.232:5984');
 }());
 
 (function () {
    "use strict";
    var ngModule = angular.module('sigip');
    ngModule.factory("locationServices", function ($program_locations, COUCHDB_URL, $log, async, $q, listServices, _) {
-      listServices.syncAllLocations()
-         .on('complete', $log.info);
+
 
       function getLocations() {
          return $program_locations.allDocs({
@@ -62,7 +61,7 @@
 
          function map(doc) {
 
-            emit({
+            emit(doc._id, {
                _id: doc._id,
                sits: doc.sits,
                location: doc.location,
@@ -75,10 +74,9 @@
             .then(function (data) {
                console.log(data);
                async.each(data.rows, function (location, cb) {
-                  listServices.getListValueById(_.get(location, 'location'))
+                  listServices.getListValueById(_.get(location, 'value.location'))
                      .then(function (listValue) {
-                        console.log(listValue, "d1 ");
-                        var mergedDoc = _.set(location, 'location', listValue);
+                        var mergedDoc = _.set(_.get(location, 'value'), 'location', listValue);
                         locationCollection.push(mergedDoc);
                         cb();
                      })
@@ -125,43 +123,67 @@
    });
 }());
 
-(function(){
+(function () {
    "use strict";
-   angular.module("sigip").service("participantServices", function($log, $q, $location_participants, async, $$messages, _, $contacts) {
+   angular.module("sigip").service("participantServices", function ($log,
+                                                                    $q,
+                                                                    $location_participants,
+                                                                    async,
+                                                                    $$messages,
+                                                                    _,
+                                                                    $contacts,
+                                                                    COUCHDB_URL,
+                                                                    $lists) {
+
       function getParticipants(locationID) {
          var deferred = $q.defer();
          deferred.notify("Get participants");
          if (!locationID) {
-            deferred.resolve([]);
+            deferred.resolve(false);
          } else {
             async.waterfall([
-               function(cb) {
+               function (cb) {
 
                   $location_participants
                      .find({
                         selector: {programLocation: locationID}
                      })
-                     .then(data => {
+                     .then(function (data) {
                         cb(null, _.get(data, 'docs'))
                      })
                      .catch(cb);
                },
-               function(participants, cb) {
-                  let participantCollection = [];
-                  async.each(participants, (participant, cbInner) => {
+               function (participants, cb) {
+                  var participantCollection = [];
+                  async.each(participants, function (participant, cbInner) {
                      $contacts
-                        .get(_.get(participant, 'contact'))
-                        .then(contact => {
-                           let mergeParticipantAndContact = _.set(participant, 'contact', contact);
+                        .get(_.get(participant, 'id'))
+                        .then(function (contact) {
+                           var mergeParticipantAndContact = _.set(participant, 'id', contact);
                            participantCollection.push(mergeParticipantAndContact);
                            cbInner();
                         })
                         .catch(cbInner);
-                  }, reason => {
+                  }, function (reason) {
+                     cb(reason, participantCollection);
+                  });
+               },
+               function (participants, cb) {
+                  var participantCollection = [];
+                  async.each(participants, function (participant, cbInner) {
+                     $lists
+                        .get(_.get(participant, 'type'))
+                        .then(function (listValue) {
+                           var mergeParticipantAndList= _.set(participant, 'type', listValue);
+                           participantCollection.push(mergeParticipantAndList);
+                           cbInner();
+                        })
+                        .catch(cbInner);
+                  }, function (reason) {
                      cb(reason, participantCollection);
                   });
                }
-            ], function(reason, participants) {
+            ], function (reason, participants) {
                if (reason) {
                   $$messages.simpleMessage("Error obteniendo participantes");
                   $log.error(reason);
@@ -174,8 +196,41 @@
          return deferred.promise;
       }
 
+
+      function syncAllParticipants() {
+         return $location_participants.sync(COUCHDB_URL + "/sigip_participants", {
+            live: true,
+            retry: true
+         }).on('change', function (info) {
+               $log.info(info);
+            })
+            .on('complete', function (info) {
+               $log.info(info);
+            }).on('error', function (err) {
+               $log.error(err);
+            });
+
+      }
+
+      function syncAllContacts() {
+         return $contacts.sync(COUCHDB_URL + "/sigip_contacts", {
+            live: true,
+            retry: true
+         }).on('change', function (info) {
+               $log.info(info);
+            })
+            .on('complete', function (info) {
+               $log.info(info);
+            }).on('error', function (err) {
+               $log.error(err);
+            });
+
+      }
+
       return {
-         getParticipants: getParticipants
+         getParticipants: getParticipants,
+         syncAllParticipants: syncAllParticipants,
+         syncAllContacts: syncAllContacts
       };
    });
 
@@ -194,9 +249,9 @@
          index: {
             fields: ['programLocation']
          }
-      }).then(result => {
+      }).then(function (result) {
          console.log("Created index for participants", result);
-      }).catch(err => {
+      }).catch(function (err) {
          console.log("Error creating index for participants", err);
       });
       return participantDB;
@@ -204,8 +259,17 @@
    ngModule.factory("$contacts", function (pouchDB, COUCHDB_URL) {
       return pouchDB('contacts');
    });
-   ngModule.factory("$lists", function (pouchDB, async) {
+   ngModule.factory("$lists", function (pouchDB) {
       var listsDB = pouchDB('lists');
+      listsDB.createIndex({
+         index: {
+            fields: ['name']
+         }
+      }).then(function (result) {
+         console.log("Created index for lists", result);
+      }).catch(function (err) {
+         console.log("Error creating index for lists", err);
+      });
       return listsDB;
    });
    ngModule.factory("$user", function (pouchDB) {
@@ -214,52 +278,46 @@
 }());
 
 (function () {
-   "use strict";
-   var ngModule = angular.module('sigip');
-   ngModule.factory("listServices", function ($lists, COUCHDB_URL, $log) {
-      console.log('call');
-      $lists.sync(COUCHDB_URL + "/sigip_lists", {
-            live: true,
-            retry: true
-         })
-         .on('change', function (info) {
-            $log.info(info);
-         })
-         .on('complete', function (info) {
-            $log.info(info);
-         }).on('error', function (err) {
-         $log.error(err);
+      "use strict";
+      var ngModule = angular.module('sigip');
+      ngModule.factory("listServices", function ($lists, COUCHDB_URL, $log) {
+
+         function getLocations() {
+            return $lists.allDocs({
+               include_docs: true
+            });
+         }
+
+         function getListValues(name) {
+            return $lists.find({
+               selector: {name: name}
+            });
+         }
+
+         function getListValueById(_id) {
+            return $lists.get(_id);
+         }
+
+         function syncAllLocations() {
+            return $lists.sync(COUCHDB_URL + "/sigip_lists", {
+               live: true,
+               retry: true
+            }).on('change', function (info) {
+                  $log.info(info);
+               })
+               .on('complete', function (info) {
+                  $log.info(info);
+               }).on('error', function (err) {
+                  $log.error(err);
+               });
+
+         }
+
+         return {
+            getLists: getLocations,
+            getListValues: getListValues,
+            syncAllLocations: syncAllLocations,
+            getListValueById: getListValueById
+         };
       });
-
-      function getLocations() {
-         return $lists.allDocs({
-            include_docs: true
-         });
-      }
-
-      function getListValues(name) {
-         return $lists.find({
-            selector: {name: name}
-         });
-      }
-
-      function getListValueById(_id) {
-         return $lists.get(_id);
-      }
-
-      function syncAllLocations() {
-         return $lists.sync(COUCHDB_URL + "/sigip_lists", {
-            live: true,
-            retry: true
-         })
-
-      }
-
-      return {
-         getLists: getLocations,
-         getListValues: getListValues,
-         syncAllLocations: syncAllLocations,
-         getListValueById: getListValueById
-      };
-   });
-}());
+   }());

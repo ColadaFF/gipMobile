@@ -9,5 +9,5 @@
    ngModule.constant('Immutable', Immutable);
    ngModule.constant("API_URL", 'http://192.168.2.12:3000/api');
    ngModule.constant("API_HOST", 'http://192.168.2.12:3000');
-   ngModule.constant("COUCHDB_URL", 'http://192.168.99.100:5984');
+   ngModule.constant("COUCHDB_URL", 'http://52.23.181.232:5984');
 }());

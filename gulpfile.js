@@ -10,10 +10,11 @@ var DESTCl = "./www/js/dist/";
 
 var paths = {
    sass: ['./scss/**/*.scss'],
-   services: ['./www/js/services/**/*.js']
+   services: ['./www/js/services/**/*.js'],
+   directives: ['./www/js/components/directives/**/*.js']
 };
 
-gulp.task('default', ['sass', 'build-services']);
+gulp.task('default', ['sass', 'build-services', 'build-directives']);
 
 gulp.task('sass', function (done) {
    gulp.src('./scss/ionic.app.scss')
@@ -39,9 +40,21 @@ gulp.task('build-services', function () {
       .pipe(gulp.dest(DESTCl));
 });
 
+gulp.task('build-directives', function () {
+   return gulp.src("./www/js/components/directives/**/*.js")
+      .pipe(concat("app-directives.js"))
+      /*.pipe($.uglify({
+       output: {
+       "ascii_only": true
+       }
+       }))*/
+      .pipe(gulp.dest(DESTCl));
+});
+
 gulp.task('watch', function () {
    gulp.watch(paths.sass, ['sass']);
    gulp.watch(paths.services, ['build-services']);
+   gulp.watch(paths.directives, ['build-directives']);
 });
 
 gulp.task('install', ['git-check'], function () {

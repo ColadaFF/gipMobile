@@ -1,0 +1,4 @@
+<ion-radio ng-repeat="item in to.options"
+           ng-value="option[to.valueProp || 'value']" ng-model="model[options.key]">
+   {{ item[[to.labelProp || 'name']] }}
+</ion-radio>

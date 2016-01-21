@@ -1,0 +1,33 @@
+<ion-view view-title="Participante" cache-view="false">
+   <ion-pane class="panel-has-header">
+      <ion-tabs class="tabs-icon-top tabs-positive">
+
+         <ion-tab title="Participante" icon-on="ion-ios-filing" icon-off="ion-ios-filing-outline">
+            <form name="vm.formParticipant">
+               <formly-form model="vm.model.participant" fields="vm.fieldsParticipant">
+                  <button class="button button-block button-positive" ng-disabled="vm.formParticipant.$invalid">
+                     Guardar
+                  </button>
+               </formly-form>
+            </form>
+         </ion-tab>
+
+         <ion-tab title="Contacto" icon-on="ion-ios-clock" icon-off="ion-ios-clock-outline">
+
+            <form name="vm.formContact">
+               <formly-form model="vm.model.contact" fields="vm.fieldsContact">
+                  <button class="button button-block button-positive" ng-disabled="vm.formContact.$invalid">
+                     Guardar
+                  </button>
+               </formly-form>
+            </form>
+
+         </ion-tab>
+
+         <ion-tab title="Familiares" icon-on="ion-ios-gear" icon-off="ion-ios-gear-outline">
+
+         </ion-tab>
+
+      </ion-tabs>
+   </ion-pane>
+</ion-view>

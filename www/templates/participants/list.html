@@ -1,0 +1,16 @@
+<ion-view view-title="Participantes" cache-view="false">
+   <ion-content>
+      <sigip-no-location></sigip-no-location>
+      <div class="list card">
+         <a href="#" class="item item-icon-left item-icon-right" ng-repeat="participant in vm.participants"
+            ng-click="vm.selectParticipant(participant)">
+            <i class="icon ion-ios-body"></i>
+            <h2>{{participant.id.name}} {{participant.id.lastname}}</h2>
+            <p>Edad: {{vm.getAge(participant.id.birthday)}}</p>
+            <p>Estado: {{vm.getStatusLabel(participant.status)}}</p>
+            <p>Tipo: {{participant.type.value}}</p>
+            <i class="icon ion-checkmark-circled" ng-if="vm.checkSelectedLocation(location)"></i>
+         </a>
+      </div>
+   </ion-content>
+</ion-view>

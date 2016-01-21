@@ -14,6 +14,7 @@
     "immutable": "~3.7.6",
     "ionic-toast": "~0.2.0",
     "pouchdb-find": "~0.8.0",
-    "async": "~1.5.2"
+    "async": "~1.5.2",
+    "ionic-datepicker": "~0.9.0"
   }
 }

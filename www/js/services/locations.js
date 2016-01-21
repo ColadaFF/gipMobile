@@ -2,8 +2,7 @@
    "use strict";
    var ngModule = angular.module('sigip');
    ngModule.factory("locationServices", function ($program_locations, COUCHDB_URL, $log, async, $q, listServices, _) {
-      listServices.syncAllLocations()
-         .on('complete', $log.info);
+
 
       function getLocations() {
          return $program_locations.allDocs({
@@ -17,7 +16,7 @@
 
          function map(doc) {
 
-            emit({
+            emit(doc._id, {
                _id: doc._id,
                sits: doc.sits,
                location: doc.location,
@@ -30,10 +29,9 @@
             .then(function (data) {
                console.log(data);
                async.each(data.rows, function (location, cb) {
-                  listServices.getListValueById(_.get(location, 'location'))
+                  listServices.getListValueById(_.get(location, 'value.location'))
                      .then(function (listValue) {
-                        console.log(listValue, "d1 ");
-                        var mergedDoc = _.set(location, 'location', listValue);
+                        var mergedDoc = _.set(_.get(location, 'value'), 'location', listValue);
                         locationCollection.push(mergedDoc);
                         cb();
                      })
