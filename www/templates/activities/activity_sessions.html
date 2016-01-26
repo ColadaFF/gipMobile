@@ -1,0 +1,20 @@
+<ion-view view-title="Meses para el año {{vm.year}}">
+   <ion-content>
+      <div class="list card">
+         <div ng-repeat="activityMonth in vm.activities">
+            <div class="item item-divider">
+               {{activityMonth.month}}
+            </div>
+            <a href="#" class="item item-icon-left item-icon-right" ng-repeat="session in activityMonth.sessions"
+               ng-click="vm.selectSession(session)">
+               <i class="icon ng-class: vm.getIconActivityType(session.activityType)"></i>
+               <h2>Sesión: {{session.sessionData.name}}</h2>
+               <p>Actividad: {{session.activityName}}</p>
+               <p>Tipo: {{session.activityType}}</p>
+               <span ng-if="session.sessionData.reported" class="badge badge-positive">Reportada</span>
+               <span ng-if="!session.sessionData.reported" class="badge badge-assertive">No reportada</span>
+            </a>
+         </div>
+      </div>
+   </ion-content>
+</ion-view>

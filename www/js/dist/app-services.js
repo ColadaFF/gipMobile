@@ -1,3 +1,74 @@
+(function () {
+   "use strict";
+   function activitySchedules($activitySchedule, COUCHDB_URL, $log) {
+
+      function findByActivity(idReference) {
+         return $activitySchedule
+            .find({
+               selector: {
+                  _id: idReference
+               }
+            })
+      }
+
+      function syncActivities(){
+         return $activitySchedule.sync(COUCHDB_URL + "/sigip_activity_schedule", {
+            live: true,
+            retry: true
+         }).on('change', function (info) {
+               $log.info(info);
+            })
+            .on('complete', function (info) {
+               $log.info(info);
+            }).on('error', function (err) {
+               $log.error(err);
+            });
+      }
+
+      return {
+         findByActivity: findByActivity,
+         syncActivities: syncActivities
+      }
+
+   }
+
+   activitySchedules.$inject = ["$activitySchedule", "COUCHDB_URL", "$log"];
+
+   var ngModule = angular.module('sigip');
+   ngModule.factory('activitySchedules', activitySchedules);
+}());
+
+(function () {
+   "use strict";
+   function sessionServices($sessions, COUCHDB_URL, $log) {
+      function getSession(sessionId) {
+         return $sessions.get(sessionId);
+      }
+
+      function syncSessions(){
+         return $sessions.sync(COUCHDB_URL + "/sigip_sessions", {
+            live: true,
+            retry: true
+         }).on('change', function (info) {
+               $log.info(info);
+            })
+            .on('complete', function (info) {
+               $log.info(info);
+            }).on('error', function (err) {
+               $log.error(err);
+            });
+      }
+
+      return {
+         syncSessions: syncSessions,
+         getSession: getSession
+      }
+   }
+
+   sessionServices.$inject = ['$sessions', "COUCHDB_URL", '$log'];
+   angular.module('sigip').factory('sessionServices', sessionServices)
+}());
+
 (function(){
     "use strict";
     angular.module("sigip").factory("$redux", function(_, Immutable){
@@ -41,6 +112,39 @@
    ngModule.constant("API_URL", 'http://192.168.2.12:3000/api');
    ngModule.constant("API_HOST", 'http://192.168.2.12:3000');
    ngModule.constant("COUCHDB_URL", 'http://52.23.181.232:5984');
+}());
+
+(function () {
+   "use strict";
+   var ngModule = angular.module('sigip');
+
+   function sanitizeFactory(_, moment) {
+      function cleanModel(model) {
+
+         function isEmpty(value) {
+            return _.isString(value) && ( _.isEqual(value, '') || _.isEqual(value, 'null'));
+         }
+
+         var newModel = {};
+         _.forOwn(model, function (value, key) {
+            if (!_.isNull(value) && !_.isUndefined(value) && !isEmpty(value)) {
+               if (!_.isObject(value) && !_.isArray(value) && !moment.isDate(value)) {
+                  newModel = _.set(newModel, key, String(value));
+               } else {
+                  newModel = _.set(newModel, key, value);
+               }
+            }
+         });
+         return newModel;
+      }
+
+      return {
+         cleanModel: cleanModel
+      };
+   }
+
+   sanitizeFactory.$inject = ["_", 'moment'];
+   ngModule.factory("Sanitize$", sanitizeFactory);
 }());
 
 (function () {
@@ -114,7 +218,7 @@
    "use strict";
    angular.module('sigip').factory("$$messages", function (ionicToast) {
       function simpleMessage(message) {
-         ionicToast.show(message, 'bottom', true, 2500);
+         ionicToast.show(message, 'bottom', true, 200);
       }
 
       return {
@@ -258,6 +362,22 @@
    });
    ngModule.factory("$contacts", function (pouchDB, COUCHDB_URL) {
       return pouchDB('contacts');
+   });
+   ngModule.factory("$activitySchedule", function (pouchDB, COUCHDB_URL) {
+      var activityScheduleDB = pouchDB('activitySchedule');
+      activityScheduleDB.createIndex({
+         index: {
+            fields: ['activity', '_id']
+         }
+      }).then(function (result) {
+         console.log("Created index for activitiesSchedules", result);
+      }).catch(function (err) {
+         console.log("Error creating index for activitiesSchedules", err);
+      });
+      return activityScheduleDB;
+   });
+   ngModule.factory("$sessions", function (pouchDB, COUCHDB_URL) {
+      return pouchDB('sessions');
    });
    ngModule.factory("$lists", function (pouchDB) {
       var listsDB = pouchDB('lists');

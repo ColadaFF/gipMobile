@@ -1,0 +1,20 @@
+<ion-modal-view>
+   <ion-header-bar>
+      <h1 class="title">Actividades</h1>
+      <div class="buttons">
+         <button class="button button-clear" ng-click="closeModal()">Cerrar</button>
+      </div>
+   </ion-header-bar>
+   <ion-content>
+      <h4 style="text-align: center">Seleccione el año de las actividades</h4>
+
+      <form name="activitiesYearForm" ng-submit="goToActivities()">
+         <formly-form model="activities" fields="activityFields">
+            <button type="submit" class="button button-block button-positive"
+                    ng-disabled="activitiesYearForm.$invalid">
+               Ir a la programación del año
+            </button>
+         </formly-form>
+      </form>
+   </ion-content>
+</ion-modal-view>

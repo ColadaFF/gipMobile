@@ -1,0 +1,6 @@
+<ionic-datepicker input-obj="to.datepickerOptions">
+   <button class="button button-block  button-balanced">
+      {{model[options.key] ? (model[options.key] | amParse:"LL":"es")
+      : to.placeholder}}
+   </button>
+</ionic-datepicker>

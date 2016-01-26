@@ -5,7 +5,6 @@
       vm.getAge = getAge;
       vm.getStatusLabel = getStatusLabel;
       vm.selectParticipant = selectParticipant;
-      console.log(participants);
       if (participants === false) {
          vm.status = false;
       } else {

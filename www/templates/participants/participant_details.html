@@ -1,33 +1,48 @@
 <ion-view view-title="Participante" cache-view="false">
-   <ion-pane class="panel-has-header">
-      <ion-tabs class="tabs-icon-top tabs-positive">
+   <ion-tabs class="tabs-icon-top tabs-positive">
 
-         <ion-tab title="Participante" icon-on="ion-ios-filing" icon-off="ion-ios-filing-outline">
-            <form name="vm.formParticipant">
+      <ion-tab title="Participante" icon-on="ion-ios-filing" icon-off="ion-ios-filing-outline">
+         <div class="panel-has-header">
+            <form name="vm.formParticipant" ng-submit="vm.saveModel()">
                <formly-form model="vm.model.participant" fields="vm.fieldsParticipant">
-                  <button class="button button-block button-positive" ng-disabled="vm.formParticipant.$invalid">
+                  <button type="submit" class="button button-block button-positive"
+                          ng-disabled="vm.formParticipant.$invalid">
                      Guardar
                   </button>
                </formly-form>
             </form>
-         </ion-tab>
+         </div>
+      </ion-tab>
 
-         <ion-tab title="Contacto" icon-on="ion-ios-clock" icon-off="ion-ios-clock-outline">
-
-            <form name="vm.formContact">
+      <ion-tab title="Contacto" icon-on="ion-ios-clock" icon-off="ion-ios-clock-outline">
+         <ion-content overflow-scroll="true" class="panel-has-header">
+            <form name="vm.formContact" ng-submit="vm.saveModel()">
                <formly-form model="vm.model.contact" fields="vm.fieldsContact">
-                  <button class="button button-block button-positive" ng-disabled="vm.formContact.$invalid">
+                  <button type="submit" class="button button-block button-positive"
+                          ng-disabled="vm.formContact.$invalid">
                      Guardar
                   </button>
                </formly-form>
             </form>
+         </ion-content>
+      </ion-tab>
 
-         </ion-tab>
+      <ion-tab title="Familiares" icon-on="ion-ios-gear" icon-off="ion-ios-gear-outline">
+         <ion-content overflow-scroll="true" class="panel-has-header">
+            <div class="list card">
+               <a href="#" class="item item-icon-left item-icon-right" ng-repeat="relative in vm.relatives"
+                  ng-click="vm.selectGuardian()">
+                  <i class="icon ion-home"></i>
+                  <h2>{{relative.id.name}} {{relative.id.lastname}}</h2>
+                  <p>Identificación: {{relative.id.idNumber}}</p>
+                  <p>Parentesco: {{relative.type}}</p>
+                  <p>Teléfono Móvil: {{relative.id.mobile}}</p>
+                  <p>Teléfono Fijo: {{relative.id.phone}}</p>
+                  <i class="icon ion-checkmark-circled" ng-if="vm.checkSelectedLocation(location)"></i>
+               </a>
+            </div>
+         </ion-content>
+      </ion-tab>
 
-         <ion-tab title="Familiares" icon-on="ion-ios-gear" icon-off="ion-ios-gear-outline">
-
-         </ion-tab>
-
-      </ion-tabs>
-   </ion-pane>
+   </ion-tabs>
 </ion-view>

@@ -1,4 +1,4 @@
-angular.module('sigipFormly', ['formly', 'ionic-datepicker'])
+angular.module('sigipFormly', ['formly', 'ionic-datepicker', 'ngMask'])
    .run(function (formlyConfig) {
       var templateSelect = "<select ng-model='model[options.key]'></select>";
 
@@ -7,10 +7,25 @@ angular.module('sigipFormly', ['formly', 'ionic-datepicker'])
          templateUrl: 'js/formly/wrappers/labelSelect.html'
       });
 
+      formlyConfig.setWrapper({
+         name: 'labelDateTime',
+         templateUrl: 'js/formly/wrappers/dateTimePicker.html'
+      });
 
       formlyConfig.setWrapper({
          name: 'labelRadio',
          templateUrl: 'js/formly/wrappers/labelRadio.html'
+      });
+
+      formlyConfig.setWrapper({
+         name: 'labelIonic',
+         templateUrl: 'js/formly/wrappers/wrapper_default.html'
+      });
+
+      formlyConfig.setType({
+         name: 'input',
+         templateUrl: 'js/formly/templates/input.html',
+         wrapper: 'labelIonic'
       });
 
       formlyConfig.setType({
@@ -40,7 +55,8 @@ angular.module('sigipFormly', ['formly', 'ionic-datepicker'])
                   setLabel: 'Guardar',
                   monthList: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Obtubre", "Noviembre", "Diciembre"],
                   dateFormat: 'DD/MM/YYYY'
-               }
+               },
+               placeholder: "Presione aquí"
             }
          },
          controller: ["$scope", function ($scope) {
@@ -51,9 +67,8 @@ angular.module('sigipFormly', ['formly', 'ionic-datepicker'])
                $scope.model[$scope.options.key] = val;
             }
          }],
-         template: '<ionic-datepicker input-obj="to.datepickerOptions">' +
-         '<button class="button button-block button-positive"> {{model[options.key] | amParse:"LL":"es"}}</button>' +
-         '</ionic-datepicker>'
+         wrapper: 'labelDateTime',
+         templateUrl: "js/formly/templates/dateTimePicker.html"
       });
 
       formlyConfig.setType({
@@ -61,12 +76,40 @@ angular.module('sigipFormly', ['formly', 'ionic-datepicker'])
          templateUrl: 'js/formly/templates/radio.html',
          wrapper: 'labelSelect'
       });
+
+      formlyConfig.setType({
+         name: 'maskedInput',
+         extends: 'input',
+         defaultOptions: {
+            ngModelAttrs: { // this is part of the magic... It's a little complex, but super powerful
+               mask: { // the key "ngMask" must match templateOptions.ngMask
+                  attribute: 'mask' // this the name of the attribute to be applied to the ng-model in the template
+               },
+               // applies the 'clean' attribute with the value of "true"
+               'true': {
+                  value: 'clean'
+               },
+               limit: {
+                  attribute: 'limit'
+               },
+               validate: {
+                  attribute: 'validate'
+               },
+               restrict: {
+                  attribute: 'restrict'
+               },
+               repeat: {
+                  attribute: 'repeat'
+               }
+            }
+         }
+      });
    })
    .constant("moment", moment)
    .constant("_", _)
    .filter('amParse', ['moment', function (moment) {
       return function (value, format, locale) {
-         if(!_.isUndefined(value)){
+         if (!_.isUndefined(value)) {
             return moment(value).locale(locale).format(format);
          }
       };

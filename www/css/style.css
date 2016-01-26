@@ -8,3 +8,9 @@ img.landing-logo {
 .panel-has-header{
    top: 64px !important;
 }
+
+.pull-right-container{
+   float: right !important;
+   left: 5% !important;
+   position: relative;
+}

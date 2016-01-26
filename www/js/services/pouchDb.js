@@ -21,6 +21,22 @@
    ngModule.factory("$contacts", function (pouchDB, COUCHDB_URL) {
       return pouchDB('contacts');
    });
+   ngModule.factory("$activitySchedule", function (pouchDB, COUCHDB_URL) {
+      var activityScheduleDB = pouchDB('activitySchedule');
+      activityScheduleDB.createIndex({
+         index: {
+            fields: ['activity', '_id']
+         }
+      }).then(function (result) {
+         console.log("Created index for activitiesSchedules", result);
+      }).catch(function (err) {
+         console.log("Error creating index for activitiesSchedules", err);
+      });
+      return activityScheduleDB;
+   });
+   ngModule.factory("$sessions", function (pouchDB, COUCHDB_URL) {
+      return pouchDB('sessions');
+   });
    ngModule.factory("$lists", function (pouchDB) {
       var listsDB = pouchDB('lists');
       listsDB.createIndex({
