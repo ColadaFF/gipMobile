@@ -10,6 +10,14 @@
                                                                     COUCHDB_URL,
                                                                     $lists) {
 
+      function formatName(name) {
+         return _.chain(name)
+            .split(' ')
+            .map(_.capitalize)
+            .join(' ')
+            .value();
+      }
+
       function getParticipants(locationID) {
          var deferred = $q.defer();
          deferred.notify("Get participants");
@@ -49,7 +57,7 @@
                      $lists
                         .get(_.get(participant, 'type'))
                         .then(function (listValue) {
-                           var mergeParticipantAndList= _.set(participant, 'type', listValue);
+                           var mergeParticipantAndList = _.set(participant, 'type', listValue);
                            participantCollection.push(mergeParticipantAndList);
                            cbInner();
                         })
@@ -57,6 +65,45 @@
                   }, function (reason) {
                      cb(reason, participantCollection);
                   });
+               },
+               function (participants, cb) {
+                  var participantCollection = [];
+                  async.each(participants, function (participant, cbInner) {
+                     var relatives = _.get(participant, 'id.relatives', []);
+                     var relativesPopulated = [];
+                     async.each(relatives, function (relative, cbRelative) {
+                        $contacts.get(relative.id)
+                           .then(function (data) {
+                              relativesPopulated.push(_.set(relative, 'id', data));
+                              cbRelative();
+                           })
+                           .catch(function (err) {
+                              cbRelative(err);
+                           });
+                     }, function (err) {
+                        if (err) {
+                           cbInner(err);
+                        } else {
+                           var merge = _.set(participant, 'id.relatives', relativesPopulated);
+                           participantCollection.push(merge);
+                           cbInner();
+                        }
+                     });
+                  }, function (reason) {
+                     cb(reason, participantCollection);
+                  });
+               },
+               function (participants, cb) {
+                  var sorted = _.chain(participants)
+                     .map(function (participant) {
+                        var dataName = _.set(participant, 'id.name', formatName(participant.id.name));
+                        return _.set(dataName, 'id.lastname', formatName(participant.id.lastname));
+                     })
+                     .sortBy(function (participant) {
+                        return _.get(participant, 'id.lastname');
+                     })
+                     .value();
+                  cb(null, sorted);
                }
             ], function (reason, participants) {
                if (reason) {

@@ -16,6 +16,8 @@
     "pouchdb-find": "~0.8.0",
     "async": "~1.5.2",
     "ionic-datepicker": "~0.9.0",
-    "ngMask": "angular-mask#~3.0.16"
+    "ngMask": "angular-mask#~3.0.16",
+    "angular-resource": "^1.4.9",
+    "angular-jwt": "^0.0.9"
   }
 }

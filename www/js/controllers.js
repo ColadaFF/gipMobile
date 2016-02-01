@@ -1,6 +1,17 @@
 angular.module('sigip.controllers', [])
 
-   .controller('AppCtrl', function ($scope, $ionicModal, $timeout, $state, moment, $redux, $$messages) {
+   .controller('AppCtrl', function ($scope,
+                                    $ionicModal,
+                                    $timeout,
+                                    $state,
+                                    moment,
+                                    $redux,
+                                    $$messages,
+                                    syncServices,
+                                    $ionicLoading,
+                                    $log,
+                                    $rootScope,
+                                    loginFactory) {
 
       // With the new view caching in Ionic, Controllers are only called
       // when they are recreated or on app start, instead of every page change.
@@ -9,11 +20,75 @@ angular.module('sigip.controllers', [])
       //$scope.$on('$ionicView.enter', function(e) {
       //});
 
+      $scope.loggedIn = false;
+      $scope.logout = logout;
+
+      function logout() {
+         syncServices
+            .deleteUserFormDb()
+            .then(function () {
+               $redux.deleteAction('loggedUser');
+               modelLogin.modal.show();
+               $scope.loggedIn = false;
+            })
+            .catch(function (reason) {
+               $$messages.simpleMessage("Ocurrió un error inesperado, por favor, intentelo más tarde.");
+               $log.error(reason);
+            });
+      }
+
+      function loadUser() {
+         $ionicLoading.show({
+            template: 'Espere...'
+         });
+         syncServices
+            .loadUserFromDb()
+            .then(function (data) {
+               $log.info(data);
+               if (_.size(data.rows) > 0) {
+                  $redux.setAction('loggedUser', data.rows[0].doc);
+                  $scope.loggedIn = true;
+                  $ionicLoading.hide();
+                  $$messages.simpleMessage("Bienvenido de vuelta.");
+
+               } else {
+                  modelLogin.modal.show();
+                  $ionicLoading.hide();
+               }
+            })
+            .catch(function (reason) {
+               $$messages.simpleMessage("Error al obtener el usuario, por favor, intentelo de nuevo más tarde.");
+               $log.error(reason);
+               $ionicLoading.hide();
+            });
+
+      }
+
+      var modelLogin = $rootScope.$new();
+
       // Form data for the login modal
-      $scope.loginData = {};
+      modelLogin.loginData = {};
 
       $scope.activities = {
          year: moment().year()
+      };
+
+      $scope.syncData = function () {
+         $ionicLoading.show({
+            template: 'Sincronizando...'
+         });
+         syncServices
+            .syncAll()
+            .then(function (data) {
+               $ionicLoading.hide();
+               $$messages.simpleMessage("Datos sincronizados correctamente");
+               $log.info(data);
+            })
+            .catch(function (reason) {
+               $ionicLoading.hide();
+               $$messages.simpleMessage("Error sincronizando los datos, por favor, intente más tarde.");
+               $log.error(reason);
+            });
       };
 
       $scope.activityFields = [
@@ -48,6 +123,20 @@ angular.module('sigip.controllers', [])
       };
 
       // Create the login modal that we will use later
+      $ionicModal.fromTemplateUrl('templates/login.html', {
+         scope: modelLogin
+      }).then(function (modal) {
+         modelLogin.modal = modal;
+      });
+
+      modelLogin.closeModal = function () {
+         modelLogin.modal.hide();
+      };
+
+      $scope.openModalLogin = function () {
+         modelLogin.modal.show();
+      };
+
       $ionicModal.fromTemplateUrl('templates/activities/activity_year_modal.html', {
          scope: $scope
       }).then(function (modal) {
@@ -58,6 +147,7 @@ angular.module('sigip.controllers', [])
       $scope.closeModal = function () {
          $scope.modal.hide();
       };
+
 
       // Open the login modal
       $scope.activitiesYear = function () {
@@ -70,15 +160,42 @@ angular.module('sigip.controllers', [])
 
 
       // Perform the login action when the user submits the login form
-      $scope.doLogin = function () {
-         console.log('Doing login', $scope.loginData);
+      modelLogin.doLogin = function () {
+         loginFactory
+            .login(modelLogin.loginData)
+            .authenticate(
+               {},
+               function (data) {
+                  console.log(data);
+                  if (data.auth === false) {
+                     $$messages.simpleMessage("Usuario y/o contraseña incorrectos.");
+                  } else {
+                     $redux.setAction("clientToken", data.data);
+                     loginFactory
+                        .getUserInfo(data.data)
+                        .info({}, function (response) {
+                           syncServices.saveUserDB(data.data, response.data);
+                           $$messages.simpleMessage("Bienvenido");
+                           modelLogin.modal.hide();
+                        }, function (reason) {
+                           $$messages.simpleMessage("Ocurrió un error inesperado, por favor, intentelo de nuevo más tarde.");
+                           $log.error(reason);
 
-         // Simulate a login delay. Remove this and replace with your login
-         // code if using a login system
-         $timeout(function () {
-            $scope.closeLogin();
-         }, 1000);
+                        });
+                  }
+                  $log.info(data);
+               },
+               function (reason) {
+                  $log.error(reason);
+               }
+            );
       };
+
+
+      loadUser();
+      /*syncServices
+         .cleanDbs()
+         .then($log.info, $log.error);*/
    })
 
    .controller('PlaylistsCtrl', function ($scope) {

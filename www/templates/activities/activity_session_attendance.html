@@ -1,22 +1,70 @@
 <ion-view view-title="Asistencia">
    <ion-content>
       <h3 style="text-align: center">Asistencia para {{vm.session.sessionData.name}}</h3>
-      <ion-list>
-         <ion-item class="item-toggle" ng-repeat="participant in vm.participants">
-            <div style="z-index: 1000; pointer-events: all !important;" on-double-tap="vm.openModal(participant)"
-                 ng-click="vm.openPopover(participant)">
-               {{$index + 1}}. {{participant.id.name}} {{participant.id.lastname}}
-            </div>
-            <label class="toggle toggle-assertive">
-               <input type="checkbox" ng-model="vm.model[participant._id]">
-               <div class="track">
-                  <div class="handle"></div>
+      <ion-list ng-if="vm.attendanceType !== 0">
+         <div ng-repeat="participant in vm.participants track by $index"
+              on-double-tap="vm.openModal(participant)"
+              on-hold="vm.openPopover(participant)">
+            <ion-item class="item-toggle" ng-if="vm.attendanceType === 1">
+               <div style="z-index: 1000; pointer-events: all">
+                  {{$index + 1}}. {{participant.id.name}} {{participant.id.lastname}}
                </div>
-            </label>
-         </ion-item>
+               <label class="toggle toggle-assertive">
+                  <input type="checkbox" ng-model="vm.model[participant._id]">
+                  <div class="track">
+                     <div class="handle"></div>
+                  </div>
+               </label>
+            </ion-item>
+            <ion-item class="item-toggle" ng-if="vm.attendanceType === 2">
+               <div style="z-index: 1000; pointer-events: all">
+                  {{$index + 1}}. {{participant.id.name}} {{participant.id.lastname}}
+               </div>
+               <label class="toggle toggle-assertive">
+                  <input type="checkbox" ng-model="vm.model[participant._id]">
+                  <div class="track">
+                     <div class="handle"></div>
+                  </div>
+               </label>
+            </ion-item>
+            <ion-item ng-if="vm.attendanceType === 3">
+               <div style="z-index: 1000; pointer-events: all">
+                  {{$index + 1}}. {{participant.id.name}} {{participant.id.lastname}}
+               </div>
+            </ion-item>
+            <ion-item class="item-toggle"
+                      ng-if="(vm.attendanceType === 2 || vm.attendanceType === 3)  && participant.guardian">
+               <div style="z-index: 1000; pointer-events: all">
+                  {{$index + 1}}.1. {{participant.guardian.id.name}} {{participant.guardian.id.lastname}}
+               </div>
+               <label class="toggle toggle-assertive">
+                  <input type="checkbox" ng-model="vm.modelGuardians[participant._id]">
+                  <div class="track">
+                     <div class="handle"></div>
+                  </div>
+               </label>
+            </ion-item>
+            <ion-item class="item-toggle"
+                      ng-if="(vm.attendanceType === 2 || vm.attendanceType === 3)  && !participant.guardian">
+               <div style="z-index: 1000; pointer-events: all">
+                  {{$index + 1}}.1. Participante sin familiares asociados.
+               </div>
+            </ion-item>
+         </div>
+         <button class="button button-block button-positive" ng-click="vm.saveAttendance()" ng-disabled="vm.exists">
+            Guardar asistencia
+         </button>
       </ion-list>
-      <button class="button button-block button-positive">
-         Guardar asistencia
-      </button>
+      <form ng-submit="vm.saveAttendance()" ng-if="vm.attendanceType === 0">
+         <div class="list">
+            <label class="item item-input item-stacked-label">
+               <span class="input-label">Numero de asistentes</span>
+               <input type="number" placeholder="Ej: 50" ng-required ng-model="vm.model.attendance">
+            </label>
+         </div>
+         <button type="submit" class="button button-block button-positive" ng-disabled="vm.exists">
+            Guardar asistencia
+         </button>
+      </form>
    </ion-content>
 </ion-view>

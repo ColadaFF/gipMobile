@@ -1,0 +1,12 @@
+<ion-view view-title="Encuestas">
+   <ion-content>
+      <div class="list card">
+         <a href="#" class="item item-icon-left item-icon-right" ng-repeat="survey in vm.surveys"
+            ng-click="vm.applySurvey(survey)">
+            <i ng-class="vm.surveyIcon(survey)"></i>
+            <h2>{{survey.description}}</h2>
+            <p>Tipo: {{vm.getTypeLabel(survey)}}</p>
+         </a>
+      </div>
+   </ion-content>
+</ion-view>

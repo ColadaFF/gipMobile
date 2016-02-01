@@ -7,7 +7,8 @@
    ngModule.constant('_', _);
    ngModule.constant('async', async);
    ngModule.constant('Immutable', Immutable);
-   ngModule.constant("API_URL", 'http://192.168.2.12:3000/api');
-   ngModule.constant("API_HOST", 'http://192.168.2.12:3000');
-   ngModule.constant("COUCHDB_URL", 'http://52.23.181.232:5984');
+   ngModule.constant('$ObjectId', ObjectID);
+   ngModule.constant("API_URL", 'http://52.3.24.46:3000/api');
+   ngModule.constant("API_HOST", 'http://52.3.24.46:3000');
+   ngModule.constant("COUCHDB_URL", 'http://52.23.181.232');
 }());

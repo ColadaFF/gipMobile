@@ -1,4 +1,4 @@
-angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 'pouchdb', 'ionic-toast'])
+angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 'pouchdb', 'ionic-toast', 'ngResource', 'angular-jwt'])
 
    .run(function ($ionicPlatform, formlyConfig, $rootScope) {
       $ionicPlatform.ready(function () {
@@ -84,28 +84,29 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 
                   resolve: {
                      participant: ["$redux", "async", "$q", "$contacts", function ($redux, async, $q, $contacts) {
                         var deferred = $q.defer();
-                        var selectedParticipant = $redux.getAction('selectedParticipant');
-                        var relativesFromParticipant = _.get(selectedParticipant, 'id.relatives');
-                        var relativesPopulated = [];
-                        async.each(relativesFromParticipant, function (relative, cbInner) {
-                           $contacts.get(relative.id)
-                              .then(function (data) {
-                                 relativesPopulated.push(_.set(relative, 'id', data));
-                                 cbInner();
-                              })
-                              .catch(function (err) {
-                                 cbInner(err);
-                              });
-                        }, function (err) {
-                           if (err) {
-                              deferred.reject(err);
-                           } else {
-                              var merge = _.set(selectedParticipant, 'id.relatives', relativesPopulated);
-                              console.log("merge", merge);
-                              deferred.resolve(merge);
-                           }
-                        });
-                        return deferred.promise;
+                        /*var selectedParticipant =*/
+                        return $redux.getAction('selectedParticipant');
+                        /*var relativesFromParticipant = _.get(selectedParticipant, 'id.relatives');
+                         var relativesPopulated = [];
+                         async.each(relativesFromParticipant, function (relative, cbInner) {
+                         $contacts.get(relative.id)
+                         .then(function (data) {
+                         relativesPopulated.push(_.set(relative, 'id', data));
+                         cbInner();
+                         })
+                         .catch(function (err) {
+                         cbInner(err);
+                         });
+                         }, function (err) {
+                         if (err) {
+                         deferred.reject(err);
+                         } else {
+                         var merge = _.set(selectedParticipant, 'id.relatives', relativesPopulated);
+                         console.log("merge", merge);
+                         deferred.resolve(merge);
+                         }
+                         });
+                         return deferred.promise;*/
                      }],
                      lists: ["listServices", "$q", "async", "_", function (listServices, $q, async, _) {
                         var deferred = $q.defer();
@@ -157,7 +158,16 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 
                      participants: ["participantServices", "$redux", '_', function (participantServices, $redux, _) {
                         var location = $redux.getAction('selectedLocation');
                         return participantServices.getParticipants(_.get(location, '_id'));
-                     }]
+                     }],
+                     attendanceDoc: [
+                        'attendanceServices',
+                        '$redux',
+                        function (attendanceServices, $redux) {
+                           var session = $redux.getAction('selectedSession');
+                           console.log("session", session);
+                           return attendanceServices.getAttendanceBySession(session.sessionId);
+                        }
+                     ]
                   }
                }
             }
@@ -345,6 +355,27 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 
                            });
                            return deferred.promise;
                         }]
+                  }
+               }
+            }
+         })
+
+         .state('app.surveys', {
+            url: '/surveys',
+            views: {
+               menuContent: {
+                  templateUrl: 'templates/surveys/list.html',
+                  controller: 'surveysCtlr',
+                  controllerAs: 'vm',
+                  resolve: {
+                     surveys: ["$redux", "$surveys", function ($redux, $surveys) {
+                        var location = $redux.getAction('selectedLocation');
+                        return $surveys.find({
+                           selector: {
+                              programId: _.get(location, 'program._id', _.get(location, 'program', ''))
+                           }
+                        });
+                     }]
                   }
                }
             }

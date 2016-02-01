@@ -1,0 +1,20 @@
+<ion-modal-view>
+   <ion-header-bar>
+      <h1 class="title">Comentarios de asistencia</h1>
+      <div class="buttons">
+         <button class="button button-clear" ng-click="closeModal()">Cerrar</button>
+      </div>
+   </ion-header-bar>
+   <ion-content>
+      <h4 style="text-align: center">{{participant.id.name}} {{participant.id.lastname}}</h4>
+
+      <form name="activitiesYearForm" ng-submit="saveComment(model)">
+         <formly-form model="model" fields="fields">
+            <button type="submit" class="button button-block button-positive"
+                    ng-disabled="activitiesYearForm.$invalid">
+               Guardar comentarios
+            </button>
+         </formly-form>
+      </form>
+   </ion-content>
+</ion-modal-view>
