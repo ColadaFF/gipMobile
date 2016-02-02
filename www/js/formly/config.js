@@ -29,6 +29,16 @@ angular.module('sigipFormly', ['formly', 'ionic-datepicker', 'ngMask'])
       });
 
       formlyConfig.setType({
+         name: 'textarea',
+         templateUrl: 'js/formly/templates/textarea.html'
+      });
+
+      formlyConfig.setType({
+         name: 'toggle',
+         templateUrl: 'js/formly/templates/toggle.html'
+      });
+
+      formlyConfig.setType({
          name: 'select',
          template: templateSelect,
          defaultOptions(options) {

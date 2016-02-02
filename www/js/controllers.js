@@ -11,14 +11,8 @@ angular.module('sigip.controllers', [])
                                     $ionicLoading,
                                     $log,
                                     $rootScope,
-                                    loginFactory) {
-
-      // With the new view caching in Ionic, Controllers are only called
-      // when they are recreated or on app start, instead of every page change.
-      // To listen for when this page is active (for example, to refresh data),
-      // listen for the $ionicView.enter event:
-      //$scope.$on('$ionicView.enter', function(e) {
-      //});
+                                    loginFactory,
+                                    $ionicPopover) {
 
       $scope.loggedIn = false;
       $scope.logout = logout;
@@ -36,6 +30,7 @@ angular.module('sigip.controllers', [])
                $log.error(reason);
             });
       }
+
 
       function loadUser() {
          $ionicLoading.show({
@@ -65,6 +60,26 @@ angular.module('sigip.controllers', [])
       }
 
       var modelLogin = $rootScope.$new();
+      var popOverLocation = $rootScope.$new();
+
+      popOverLocation.$on('selectedLocation', function (e, data) {
+         popOverLocation.location = $redux.getAction('selectedLocation');
+      });
+
+      $ionicPopover.fromTemplateUrl('templates/popOverLocation.html', {
+         scope: popOverLocation,
+      }).then(function (popover) {
+         popOverLocation.popover = popover;
+      });
+
+      $scope.openLocationInfo = openLocationInfo;
+      $scope.currentLocation = function () {
+         return $redux.getAction('selectedLocation');
+      };
+
+      function openLocationInfo($event) {
+         popOverLocation.popover.show($event);
+      }
 
       // Form data for the login modal
       modelLogin.loginData = {};
@@ -194,8 +209,8 @@ angular.module('sigip.controllers', [])
 
       loadUser();
       /*syncServices
-         .cleanDbs()
-         .then($log.info, $log.error);*/
+       .cleanDbs()
+       .then($log.info, $log.error);*/
    })
 
    .controller('PlaylistsCtrl', function ($scope) {

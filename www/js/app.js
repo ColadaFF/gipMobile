@@ -1,6 +1,6 @@
 angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 'pouchdb', 'ionic-toast', 'ngResource', 'angular-jwt'])
 
-   .run(function ($ionicPlatform, formlyConfig, $rootScope) {
+   .run(function ($ionicPlatform, formlyConfig, $rootScope, $config, $log) {
       $ionicPlatform.ready(function () {
          // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
          // for form inputs)
@@ -20,6 +20,8 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 
          console.log(arguments);
       });
 
+
+      $config.indexAll().then($log.info, $log.error);
    })
 
    .config(function ($stateProvider, $urlRouterProvider) {
@@ -369,12 +371,122 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 
                   controllerAs: 'vm',
                   resolve: {
                      surveys: ["$redux", "$surveys", function ($redux, $surveys) {
+                        console.log("surveys");
                         var location = $redux.getAction('selectedLocation');
                         return $surveys.find({
                            selector: {
                               programId: _.get(location, 'program._id', _.get(location, 'program', ''))
                            }
                         });
+                     }]
+                  }
+               }
+            }
+         })
+         .state('app.anons', {
+            url: '/anonymous',
+            views: {
+               'menuContent': {
+                  templateUrl: 'templates/surveys/anonApplications.html',
+                  controller: 'anonInstancesController',
+                  controllerAs: 'vm',
+                  resolve: {
+                     instances: ['$redux', '$q', '$anonInstances', function ($redux, $q, $anonInstances) {
+                        var survey = $redux.getAction('selectedSurvey');
+                        var location = $redux.getAction('selectedLocation');
+                        return $anonInstances.find({
+                           selector: {
+                              survey: _.get(survey, '_id'),
+                              programLocation: _.get(location, '_id')
+                           }
+                        });
+                     }]
+                  }
+               }
+            }
+         })
+         .state('app.surveySections', {
+            url: '/survey/:_id/sections',
+            views: {
+               'menuContent': {
+                  templateUrl: 'templates/surveys/print_sections.html',
+                  controller: 'surveySectionController',
+                  controllerAs: 'vm',
+                  resolve: {
+                     sections: ['$stateParams', '$sections', function ($stateParams, $sections) {
+                        var surveyId = $stateParams._id;
+                        return $sections.find({
+                           selector: {
+                              surveyId: surveyId
+                           }
+                        });
+                     }]
+                  }
+               }
+            }
+         })
+         .state('app.surveyQuestions', {
+            url: '/section/:idSection/questions',
+            views: {
+               'menuContent': {
+                  templateUrl: 'templates/surveys/print_questions_sections.html',
+                  controller: 'surveyQuestionController',
+                  controllerAs: 'vm',
+                  resolve: {
+                     questions: ['$stateParams', '$questions', 'async', '$q', '$sections', '_', "$lists", function ($stateParams, $questions, async, $q, $sections, _, $lists) {
+                        var sectionId = $stateParams.idSection;
+                        var deferred = $q.defer();
+                        async.waterfall([
+                           function (cb) {
+                              $sections.get(sectionId, cb);
+                           },
+                           function (section, cb) {
+                              var questions = _.get(section, 'questions');
+                              var questionsCollection = [];
+                              async.eachSeries(questions, function (questionId, cbInner) {
+                                 $questions.get(questionId, function (err, questionDoc) {
+                                    if (err) {
+                                       cbInner(err);
+                                    } else {
+                                       questionsCollection.push(questionDoc);
+                                       cbInner();
+                                    }
+                                 });
+                              }, function (err) {
+                                 cb(err, questionsCollection);
+                              });
+                           },
+                           function (questions, cb) {
+                              var questionCollection = [];
+                              async.eachSeries(questions, function (question, cbInner) {
+                                 if (_.has(question, 'valueSource.list.name')) {
+                                    $lists.find({
+                                          selector: {
+                                             name: _.get(question, 'valueSource.list.name')
+                                          }
+                                       })
+                                       .then(function (response) {
+                                          var docs = _.get(response, 'docs', response);
+                                          questionCollection.push(_.set(question, 'valueSource.values', docs));
+                                          cbInner();
+                                       })
+                                       .catch(cbInner);
+                                 } else {
+                                    questionCollection.push(question);
+                                    cbInner();
+                                 }
+                              }, function (err) {
+                                 cb(err, questionCollection);
+                              });
+                           }
+                        ], function (err, result) {
+                           if (err) {
+                              deferred.reject(err);
+                           } else {
+                              deferred.resolve(result);
+                           }
+                        });
+                        return deferred.promise;
                      }]
                   }
                }

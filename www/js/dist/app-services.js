@@ -216,7 +216,6 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
    "use strict";
    var ngModule = angular.module('sigip'),
       PouchDB = window.PouchDB;
-   PouchDB.plugin(window.pouchdbFind);
    ngModule.constant('moment', moment);
    ngModule.constant('_', _);
    ngModule.constant('async', async);
@@ -259,6 +258,7 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
    sanitizeFactory.$inject = ["_", 'moment'];
    ngModule.factory("Sanitize$", sanitizeFactory);
 }());
+
 
 (function () {
    "use strict";
@@ -502,150 +502,327 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
 
 (function () {
    "use strict";
+   var indexes = addIndex();
+   PouchDB.debug.enable('pouchdb:find');
    var ngModule = angular.module("sigip");
-   ngModule.factory("$program_locations", function (pouchDB, COUCHDB_URL) {
-      var locationDB = pouchDB('locations');
+
+   ngModule.factory("$program_locations", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var locationDB = new pouchDB('locations');
+      locationDB.find = pouchDBDecorators.qify(locationDB.find);
+      locationDB.upsert = pouchDBDecorators.qify(locationDB.upsert);
+      locationDB.createIndex = pouchDBDecorators.qify(locationDB.createIndex);
       return locationDB;
    });
-   ngModule.factory("$location_participants", function (pouchDB, COUCHDB_URL) {
-      var participantDB = pouchDB('participants');
-      participantDB.createIndex({
-         index: {
-            fields: ['programLocation']
-         }
-      }).then(function (result) {
-         console.log("Created index for participants", result);
-      }).catch(function (err) {
-         console.log("Error creating index for participants", err);
-      });
+   ngModule.factory("$location_participants", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var participantDB = new pouchDB('participants');
+      participantDB.find = pouchDBDecorators.qify(participantDB.find);
+      participantDB.createIndex = pouchDBDecorators.qify(participantDB.createIndex);
       return participantDB;
    });
-   ngModule.factory("$contacts", function (pouchDB, COUCHDB_URL) {
-      return pouchDB('contacts');
+   ngModule.factory("$contacts", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var db = new pouchDB('contacts');
+      db.find = pouchDBDecorators.qify(db.find);
+      return db;
    });
-   ngModule.factory("$activitySchedule", function (pouchDB, COUCHDB_URL) {
-      var activityScheduleDB = pouchDB('activitySchedule');
-      activityScheduleDB.createIndex({
-         index: {
-            fields: ['activity', '_id']
-         }
-      }).then(function (result) {
-         console.log("Created index for activitiesSchedules", result);
-      }).catch(function (err) {
-         console.log("Error creating index for activitiesSchedules", err);
-      });
+   ngModule.factory("$activitySchedule", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var activityScheduleDB = new pouchDB('activitySchedule');
+      activityScheduleDB.find = pouchDBDecorators.qify(activityScheduleDB.find);
+      activityScheduleDB.createIndex = pouchDBDecorators.qify(activityScheduleDB.createIndex);
       return activityScheduleDB;
    });
-   ngModule.factory("$sessions", function (pouchDB, COUCHDB_URL) {
-      return pouchDB('sessions');
+   ngModule.factory("$sessions", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var sessionsDB = new pouchDB('sessions');
+      sessionsDB.find = pouchDBDecorators.qify(sessionsDB.find);
+      sessionsDB.createIndex = pouchDBDecorators.qify(sessionsDB.createIndex);
+      return sessionsDB;
    });
-   ngModule.factory("$attendance", function (pouchDB, COUCHDB_URL) {
-      var attendanceDB = pouchDB('attendance');
-      attendanceDB.createIndex({
-         index: {
-            fields: ['session', '_id']
-         }
-      }).then(function (result) {
-         console.log("Created index for session attendance", result);
-      }).catch(function (err) {
-         console.log("Error creating index for session attendance", err);
-      });
+   ngModule.factory("$attendance", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var attendanceDB = new pouchDB('attendance');
+      attendanceDB.find = pouchDBDecorators.qify(attendanceDB.find);
+      attendanceDB.createIndex = pouchDBDecorators.qify(attendanceDB.createIndex);
       return attendanceDB;
    });
-   ngModule.factory("$surveys", function (pouchDB, COUCHDB_URL) {
-      var DB = pouchDB('surveys');
-      DB.createIndex({
-         index: {
-            fields: ['programId', '_id']
-         }
-      }).then(function (result) {
-         console.log("Created index for surveys", result);
-      }).catch(function (err) {
-         console.log("Error creating index for surveys", err);
-      });
+   ngModule.factory("$surveys", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var DB = new pouchDB('surveys');
+      DB.find = pouchDBDecorators.qify(DB.find);
+      DB.createIndex = pouchDBDecorators.qify(DB.createIndex);
+      DB.upsert = pouchDBDecorators.qify(DB.upsert);
       return DB;
    });
-   ngModule.factory("$sections", function (pouchDB, COUCHDB_URL) {
-      var DB = pouchDB('survey_sections');
-      DB.createIndex({
-         index: {
-            fields: ['surveyId', '_id']
-         }
-      }).then(function (result) {
-         console.log("Created index for survey sections", result);
-      }).catch(function (err) {
-         console.log("Error creating index for survey sections", err);
-      });
+   ngModule.factory("$sections", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var DB = new pouchDB('survey_sections');
+      DB.find = pouchDBDecorators.qify(DB.find);
+      DB.upsert = pouchDBDecorators.qify(DB.upsert);
+      DB.createIndex = pouchDBDecorators.qify(DB.createIndex);
       return DB;
    });
-   ngModule.factory("$questions", function (pouchDB, COUCHDB_URL) {
-      var DB = pouchDB('survey_questions');
-      DB.createIndex({
-         index: {
-            fields: ['sectionId', '_id']
-         }
-      }).then(function (result) {
-         console.log("Created index for survey question", result);
-      }).catch(function (err) {
-         console.log("Error creating index for survey questions", err);
-      });
+   ngModule.factory("$questions", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var DB = new pouchDB('survey_questions');
+      DB.find = pouchDBDecorators.qify(DB.find);
+      DB.upsert = pouchDBDecorators.qify(DB.upsert);
+      DB.createIndex = pouchDBDecorators.qify(DB.createIndex);
       return DB;
    });
-   ngModule.factory("$answers", function (pouchDB, COUCHDB_URL) {
-      var DB = pouchDB('survey_answers');
-      DB.createIndex({
-         index: {
-            fields: ['question', '_id']
-         }
-      }).then(function (result) {
-         console.log("Created index for survey answers", result);
-      }).catch(function (err) {
-         console.log("Error creating index for survey answers", err);
-      });
+   ngModule.factory("$answers", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var DB = new pouchDB('survey_answers');
+      DB.find = pouchDBDecorators.qify(DB.find);
+      DB.upsert = pouchDBDecorators.qify(DB.upsert);
+      DB.createIndex = pouchDBDecorators.qify(DB.createIndex);
       return DB;
    });
-   ngModule.factory("$anonInstances", function (pouchDB, COUCHDB_URL) {
-      var DB = pouchDB('survey_anonymous');
-      DB.createIndex({
-         index: {
-            fields: ['survey', '_id', 'programLocation']
-         }
-      }).then(function (result) {
-         console.log("Created index for survey anonymous instances", result);
-      }).catch(function (err) {
-         console.log("Error creating index for survey anonymous instances", err);
-      });
+   ngModule.factory("$anonInstances", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var DB = new pouchDB('survey_anonymous');
+      DB.find = pouchDBDecorators.qify(DB.find);
+      DB.upsert = pouchDBDecorators.qify(DB.upsert);
+      DB.createIndex = pouchDBDecorators.qify(DB.createIndex);
       return DB;
    });
-   ngModule.factory("$participantInstances", function (pouchDB, COUCHDB_URL) {
-      var DB = pouchDB('survey_participants');
-      DB.createIndex({
-         index: {
-            fields: ['survey', '_id', 'programLocation', 'beneficiary']
-         }
-      }).then(function (result) {
-         console.log("Created index for survey participant instances", result);
-      }).catch(function (err) {
-         console.log("Error creating index for survey participant instances", err);
-      });
+   ngModule.factory("$participantInstances", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var DB = new pouchDB('survey_participants');
+      DB.find = pouchDBDecorators.qify(DB.find);
+      DB.upsert = pouchDBDecorators.qify(DB.upsert);
+      DB.createIndex = pouchDBDecorators.qify(DB.createIndex);
       return DB;
    });
-   ngModule.factory("$lists", function (pouchDB) {
-      var listsDB = pouchDB('lists');
-      listsDB.createIndex({
-         index: {
-            fields: ['name']
-         }
-      }).then(function (result) {
-         console.log("Created index for lists", result);
-      }).catch(function (err) {
-         console.log("Error creating index for lists", err);
-      });
+   ngModule.factory("$lists", function (pouchDB, pouchDBDecorators) {
+      var listsDB = new pouchDB('lists');
+      listsDB.find = pouchDBDecorators.qify(listsDB.find);
+      listsDB.upsert = pouchDBDecorators.qify(listsDB.upsert);
+      listsDB.createIndex = pouchDBDecorators.qify(listsDB.createIndex);
       return listsDB;
    });
    ngModule.factory("$user", function (pouchDB) {
       return pouchDB('users');
    });
+
+
+   ngModule.factory("$config", function ($program_locations,
+                                         $location_participants,
+                                         $contacts,
+                                         $activitySchedule,
+                                         $sessions,
+                                         $attendance,
+                                         $surveys,
+                                         $sections,
+                                         $questions,
+                                         $answers,
+                                         $anonInstances,
+                                         $participantInstances,
+                                         $lists,
+                                         $q,
+                                         async) {
+      function indexAll() {
+         var deferred = $q.defer();
+         async.series([
+            function (cb) {
+               $program_locations.createIndex({
+                  index: {
+                     fields: ['_id', 'program']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $location_participants.createIndex({
+                  index: {
+                     fields: ['programLocation']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $activitySchedule.createIndex({
+                  index: {
+                     fields: ['activity', '_id']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $sessions.createIndex({
+                  index: {
+                     fields: ['_id']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $attendance.createIndex({
+                  index: {
+                     fields: ['session', '_id']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $surveys.createIndex({
+                  index: {
+                     fields: ['programId', '_id']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $sections.createIndex({
+                  index: {
+                     fields: ['surveyId', '_id']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $answers.createIndex({
+                  index: {
+                     fields: ['question', '_id']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $questions.createIndex({
+                  index: {
+                     fields: ['_id']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $anonInstances.createIndex({
+                  index: {
+                     fields: ['survey', 'programLocation']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $participantInstances.createIndex({
+                  index: {
+                     fields: ['survey', '_id', 'programLocation', 'beneficiary']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $lists.createIndex({
+                  index: {
+                     fields: ['name'],
+                     type: 'json'
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            }
+         ], function (err, result) {
+            if (err) {
+               deferred.reject(err);
+            } else {
+               deferred.resolve(result);
+            }
+         });
+         return deferred.promise;
+      }
+
+      return {
+         indexAll: indexAll
+      }
+   });
+
+   function addIndex() {
+      var fields = [
+         {
+            entity: "list",
+            fields: ["_id", "name"]
+         },
+         {
+            entity: "participant",
+            fields: ["_id", "id", 'programLocation']
+         },
+         {
+            entity: "programLocations",
+            fields: ["_id", 'program']
+         },
+         {
+            entity: "activitySchedule",
+            fields: ["activity", '_id']
+         },
+         {
+            entity: "sessions",
+            fields: ["_id"]
+         },
+         {
+            entity: "attendance",
+            fields: ["_id", 'session']
+         },
+         {
+            entity: "surveys",
+            fields: ["_id", 'programId']
+         },
+         {
+            entity: "surveySections",
+            fields: ["_id", 'surveyId']
+         },
+         {
+            entity: 'survey_questions',
+            fields: ['sectionId', '_id']
+         },
+         {
+            entity: 'survey_answers',
+            fields: ['question', '_id']
+         },
+         {
+            entity: 'survey_anonymous',
+            fields: ['survey', '_id', 'programLocation']
+         },
+         {
+            entity: 'survey_participants',
+            fields: ['survey', '_id', 'programLocation', 'beneficiary']
+         }
+      ];
+
+      return {
+         location: fieldTemplate(fields[2]),
+         participants: fieldTemplate(fields[1]),
+         lists: fieldTemplate(fields[0]),
+         activitySchedule: fieldTemplate([3]),
+         sessions: fieldTemplate([4]),
+         attendance: fieldTemplate([5]),
+         surveys: fieldTemplate([6]),
+         surveySections: fieldTemplate([7]),
+         survey_questions: fieldTemplate([8]),
+         survey_answers: fieldTemplate([9]),
+         survey_anonymous: fieldTemplate([10]),
+         survey_participants: fieldTemplate([11])
+
+      }
+
+   }
+
+   function fieldTemplate(objectData) {
+      var fields = _.get(objectData, 'fields');
+      var field = {};
+      _.forEach(fields, function (f) {
+         field[f] = "asc";
+      });
+      var newField = JSON.stringify(field);
+      var template = _.template('{"_id": "_design/index<%=entity%>","language": "query","views": {"idx-index<%=entity%>": {"map": {"fields": <%=field%>}},"reduce": "_count","options": {"def": {"fields": <%=fields%>}}}}');
+      var compiled = template({
+         entity: _.get(objectData, 'entity'),
+         field: newField,
+         fields: JSON.stringify(fields)
+      });
+      return compiled;
+   }
 }());
 
 (function () {
@@ -1056,8 +1233,8 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
                               cb(err);
                            } else {
                               var questions = _.map(_.get(docs, 'rows'), function (innerItem) {
-                                    return _.get(innerItem, 'doc.questions');
-                                 });
+                                 return _.get(innerItem, 'doc.questions');
+                              });
                               async.each(_.flatten(questions), function (question, cbInner) {
                                  $questions
                                     .sync(COUCHDB_URL + "/sigip_questions", {
@@ -1077,6 +1254,19 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
                         });
                   }
                ], cb);
+            },
+            function (results, cb) {
+               $lists
+                  .sync(COUCHDB_URL + "/sigip_lists", {
+                     retry: true
+                  })
+                  .on('change', function (info) {
+                     $log.info(info);
+                  })
+                  .on('complete', function (info) {
+                     cb(null, info);
+                  })
+                  .on('error', cb);
             }
             /*function (cb) {
              $location_participants
@@ -1238,6 +1428,24 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
             },
             function (cb) {
                $user.destroy(cb);
+            },
+            function (cb) {
+               $surveys.destroy(cb);
+            },
+            function (cb) {
+               $questions.destroy(cb);
+            },
+            function (cb) {
+               $sections.destroy(cb);
+            },
+            function (cb) {
+               $anonInstances.destroy(cb);
+            },
+            function (cb) {
+               $participantInstances.destroy(cb);
+            },
+            function (cb) {
+               $answers.destroy(cb);
             }
          ], function (err, response) {
             if (err) {

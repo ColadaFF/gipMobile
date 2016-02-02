@@ -14,3 +14,9 @@ img.landing-logo {
    left: 5% !important;
    position: relative;
 }
+
+.input-label {
+   white-space: normal !important;
+   max-width: none !important;
+   width: 100%;
+}

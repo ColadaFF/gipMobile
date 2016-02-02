@@ -1,0 +1,17 @@
+<ion-view view-title="Secciones" cache-view="false">
+   <ion-content>
+      <sigip-no-location></sigip-no-location>
+      <div class="center-block">
+         <h2 class="text-center">Encuesta: {{vm.survey.description}}</h2>
+         <h2 class="text-center">Secciones</h2>
+      </div>
+      <div class="list card">
+         <a class="item item-icon-right" ng-repeat="section in vm.sections"
+            ng-click="vm.viewSection($event, section)">
+            <h2>{{section.title}}</h2>
+            <p>Preguntas: {{section.questions.length}}</p>
+            <!--<i class="icon ion-checkmark-circled" ng-if="vm.checkSelectedLocation(location)"></i> -->
+         </a>
+      </div>
+   </ion-content>
+</ion-view>

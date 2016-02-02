@@ -361,8 +361,8 @@
                               cb(err);
                            } else {
                               var questions = _.map(_.get(docs, 'rows'), function (innerItem) {
-                                    return _.get(innerItem, 'doc.questions');
-                                 });
+                                 return _.get(innerItem, 'doc.questions');
+                              });
                               async.each(_.flatten(questions), function (question, cbInner) {
                                  $questions
                                     .sync(COUCHDB_URL + "/sigip_questions", {
@@ -382,6 +382,19 @@
                         });
                   }
                ], cb);
+            },
+            function (results, cb) {
+               $lists
+                  .sync(COUCHDB_URL + "/sigip_lists", {
+                     retry: true
+                  })
+                  .on('change', function (info) {
+                     $log.info(info);
+                  })
+                  .on('complete', function (info) {
+                     cb(null, info);
+                  })
+                  .on('error', cb);
             }
             /*function (cb) {
              $location_participants
@@ -543,6 +556,24 @@
             },
             function (cb) {
                $user.destroy(cb);
+            },
+            function (cb) {
+               $surveys.destroy(cb);
+            },
+            function (cb) {
+               $questions.destroy(cb);
+            },
+            function (cb) {
+               $sections.destroy(cb);
+            },
+            function (cb) {
+               $anonInstances.destroy(cb);
+            },
+            function (cb) {
+               $participantInstances.destroy(cb);
+            },
+            function (cb) {
+               $answers.destroy(cb);
             }
          ], function (err, response) {
             if (err) {

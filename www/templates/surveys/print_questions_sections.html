@@ -1,0 +1,12 @@
+<ion-view view-title="Preguntas" cache-view="false">
+   <ion-content>
+      <form name="vm.surveysForm" ng-submit="vm.saveSurvey()">
+         <formly-form model="vm.model" fields="vm.fields">
+            <button type="submit" class="button button-block button-positive"
+                    ng-disabled="vm.surveysForm.$invalid">
+               Guardar
+            </button>
+         </formly-form>
+      </form>
+   </ion-content>
+</ion-view>

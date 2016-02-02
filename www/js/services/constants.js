@@ -2,7 +2,6 @@
    "use strict";
    var ngModule = angular.module('sigip'),
       PouchDB = window.PouchDB;
-   PouchDB.plugin(window.pouchdbFind);
    ngModule.constant('moment', moment);
    ngModule.constant('_', _);
    ngModule.constant('async', async);
