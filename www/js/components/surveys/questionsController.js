@@ -3,6 +3,9 @@
    function controller(questions, $redux, _, $state) {
       var vm = this;
       vm.model = {};
+      _.each(questions, function (item) {
+         vm.model[item.fieldName] = _.get(item, 'answer.value', '');
+      });
       var fieldsArray = _.map(questions, function (question) {
          switch (_.get(question, 'type')) {
          case 'number':
@@ -63,12 +66,16 @@
          console.log(_.keys(field));
          return _.keys(field).length > 0;
       });
-      console.log(questions, fieldsArray, vm.fields);
       vm.viewSection = viewSection;
+      vm.saveSection = saveSection;
 
       function viewSection(section) {
          $redux.setAction("selectedSection", section);
-         console.log(section);
+         console.log(section)
+      }
+
+      function saveSection() {
+         console.log(vm.model);
       }
    }
 

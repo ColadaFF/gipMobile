@@ -20,7 +20,8 @@
                          $questions,
                          $answers,
                          $anonInstances,
-                         $participantInstances) {
+                         $participantInstances,
+                         $alerts) {
       function syncAll() {
          var user = $redux.getAction('loggedUser');
          var deferred = $q.defer();
@@ -300,6 +301,23 @@
                                           .on('error', cbInner);
                                     }, cbLocationsSurveys)
                                  },
+                                 function (cbLocationAlerts) {
+                                    async.each(locationIds, function (location, cbInner) {
+                                       $alerts
+                                          .sync(COUCHDB_URL + "/sigip_alerts", {
+                                             retry: true,
+                                             filter: 'alerts/byLocation',
+                                             query_params: {"location": location}
+                                          })
+                                          .on('change', function (info) {
+                                             $log.info(info);
+                                          })
+                                          .on('complete', function (info) {
+                                             cbInner();
+                                          })
+                                          .on('error', cbInner);
+                                    }, cbLocationAlerts)
+                                 },
                                  function (cbLocationsSurveys) {
                                     async.each(locationIds, function (location, cbInner) {
                                        $participantInstances
@@ -380,7 +398,51 @@
                               }, cbSurveys)
                            }
                         });
-                  }
+                  }/*,
+                  function (cbAnswers) {
+                     async.waterfall([
+                        function (cbInnerAnswers) {
+                           $anonInstances
+                              .allDocs({
+                                 include_docs: true,
+                                 attachments: true
+                              }, function (err, instances) {
+                                 if (err) {
+                                    cbAnswers(err);
+                                 } else {
+                                    var answers = _
+                                       .chain(instances.rows)
+                                       .map(function (item) {
+                                          return _.get(item, 'doc.solution');
+                                       })
+                                       .flatten()
+                                       .map(function (item) {
+                                          return _.get(item, 'answers');
+                                       })
+                                       .flatten()
+                                       .filter(function (item) {
+                                          return !_.isUndefined(item);
+                                       })
+                                       .value();
+                                    cbInnerAnswers(null, answers)
+                                 }
+                              });
+                        },
+                        function (answers, cbInnerAnswers) {
+                           $answers
+                              .sync(COUCHDB_URL + "/sigip_answers", {
+                                 retry: true,
+                              })
+                              .on('change', function (info) {
+                                 $log.info(info);
+                              })
+                              .on('complete', function (info) {
+                                 cbInnerAnswers();
+                              })
+                              .on('error', cbInnerAnswers);
+                        }
+                     ], cbAnswers);
+                  }*/
                ], cb);
             },
             function (results, cb) {
@@ -622,6 +684,7 @@
       '$answers',
       '$anonInstances',
       '$participantInstances',
+      '$alerts'
    ];
    angular.module('sigip').factory("syncServices", syncServices);
 }());

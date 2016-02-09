@@ -524,6 +524,11 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
       db.find = pouchDBDecorators.qify(db.find);
       return db;
    });
+   ngModule.factory("$alerts", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var db = new pouchDB('alerts');
+      db.find = pouchDBDecorators.qify(db.find);
+      return db;
+   });
    ngModule.factory("$activitySchedule", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
       var activityScheduleDB = new pouchDB('activitySchedule');
       activityScheduleDB.find = pouchDBDecorators.qify(activityScheduleDB.find);
@@ -577,6 +582,13 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
       DB.createIndex = pouchDBDecorators.qify(DB.createIndex);
       return DB;
    });
+   ngModule.factory("$methodologicalTracing", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var DB = new pouchDB('methodological_tracing');
+      DB.find = pouchDBDecorators.qify(DB.find);
+      DB.upsert = pouchDBDecorators.qify(DB.upsert);
+      DB.createIndex = pouchDBDecorators.qify(DB.createIndex);
+      return DB;
+   });
    ngModule.factory("$participantInstances", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
       var DB = new pouchDB('survey_participants');
       DB.find = pouchDBDecorators.qify(DB.find);
@@ -610,7 +622,8 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
                                          $participantInstances,
                                          $lists,
                                          $q,
-                                         async) {
+                                         async,
+                                         $alerts) {
       function indexAll() {
          var deferred = $q.defer();
          async.series([
@@ -699,6 +712,15 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
                $anonInstances.createIndex({
                   index: {
                      fields: ['survey', 'programLocation']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $alerts.createIndex({
+                  index: {
+                     fields: ['programLocation']
                   }
                }).then(function (result) {
                   cb(null, result);
@@ -892,7 +914,8 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
                          $questions,
                          $answers,
                          $anonInstances,
-                         $participantInstances) {
+                         $participantInstances,
+                         $alerts) {
       function syncAll() {
          var user = $redux.getAction('loggedUser');
          var deferred = $q.defer();
@@ -1172,6 +1195,23 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
                                           .on('error', cbInner);
                                     }, cbLocationsSurveys)
                                  },
+                                 function (cbLocationAlerts) {
+                                    async.each(locationIds, function (location, cbInner) {
+                                       $alerts
+                                          .sync(COUCHDB_URL + "/sigip_alerts", {
+                                             retry: true,
+                                             filter: 'alerts/byLocation',
+                                             query_params: {"location": location}
+                                          })
+                                          .on('change', function (info) {
+                                             $log.info(info);
+                                          })
+                                          .on('complete', function (info) {
+                                             cbInner();
+                                          })
+                                          .on('error', cbInner);
+                                    }, cbLocationAlerts)
+                                 },
                                  function (cbLocationsSurveys) {
                                     async.each(locationIds, function (location, cbInner) {
                                        $participantInstances
@@ -1252,7 +1292,51 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
                               }, cbSurveys)
                            }
                         });
-                  }
+                  }/*,
+                  function (cbAnswers) {
+                     async.waterfall([
+                        function (cbInnerAnswers) {
+                           $anonInstances
+                              .allDocs({
+                                 include_docs: true,
+                                 attachments: true
+                              }, function (err, instances) {
+                                 if (err) {
+                                    cbAnswers(err);
+                                 } else {
+                                    var answers = _
+                                       .chain(instances.rows)
+                                       .map(function (item) {
+                                          return _.get(item, 'doc.solution');
+                                       })
+                                       .flatten()
+                                       .map(function (item) {
+                                          return _.get(item, 'answers');
+                                       })
+                                       .flatten()
+                                       .filter(function (item) {
+                                          return !_.isUndefined(item);
+                                       })
+                                       .value();
+                                    cbInnerAnswers(null, answers)
+                                 }
+                              });
+                        },
+                        function (answers, cbInnerAnswers) {
+                           $answers
+                              .sync(COUCHDB_URL + "/sigip_answers", {
+                                 retry: true,
+                              })
+                              .on('change', function (info) {
+                                 $log.info(info);
+                              })
+                              .on('complete', function (info) {
+                                 cbInnerAnswers();
+                              })
+                              .on('error', cbInnerAnswers);
+                        }
+                     ], cbAnswers);
+                  }*/
                ], cb);
             },
             function (results, cb) {
@@ -1494,6 +1578,7 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
       '$answers',
       '$anonInstances',
       '$participantInstances',
+      '$alerts'
    ];
    angular.module('sigip').factory("syncServices", syncServices);
 }());

@@ -22,6 +22,11 @@
       db.find = pouchDBDecorators.qify(db.find);
       return db;
    });
+   ngModule.factory("$alerts", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var db = new pouchDB('alerts');
+      db.find = pouchDBDecorators.qify(db.find);
+      return db;
+   });
    ngModule.factory("$activitySchedule", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
       var activityScheduleDB = new pouchDB('activitySchedule');
       activityScheduleDB.find = pouchDBDecorators.qify(activityScheduleDB.find);
@@ -75,6 +80,13 @@
       DB.createIndex = pouchDBDecorators.qify(DB.createIndex);
       return DB;
    });
+   ngModule.factory("$methodologicalTracing", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
+      var DB = new pouchDB('methodological_tracing');
+      DB.find = pouchDBDecorators.qify(DB.find);
+      DB.upsert = pouchDBDecorators.qify(DB.upsert);
+      DB.createIndex = pouchDBDecorators.qify(DB.createIndex);
+      return DB;
+   });
    ngModule.factory("$participantInstances", function (pouchDB, COUCHDB_URL, pouchDBDecorators) {
       var DB = new pouchDB('survey_participants');
       DB.find = pouchDBDecorators.qify(DB.find);
@@ -108,7 +120,8 @@
                                          $participantInstances,
                                          $lists,
                                          $q,
-                                         async) {
+                                         async,
+                                         $alerts) {
       function indexAll() {
          var deferred = $q.defer();
          async.series([
@@ -197,6 +210,15 @@
                $anonInstances.createIndex({
                   index: {
                      fields: ['survey', 'programLocation']
+                  }
+               }).then(function (result) {
+                  cb(null, result);
+               }).catch(cb);
+            },
+            function (cb) {
+               $alerts.createIndex({
+                  index: {
+                     fields: ['programLocation']
                   }
                }).then(function (result) {
                   cb(null, result);

@@ -433,7 +433,7 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 
                   controller: 'surveyQuestionController',
                   controllerAs: 'vm',
                   resolve: {
-                     questions: ['$stateParams', '$questions', 'async', '$q', '$sections', '_', "$lists", function ($stateParams, $questions, async, $q, $sections, _, $lists) {
+                     questions: ['$stateParams', '$questions', 'async', '$q', '$sections', '_', "$lists", "$redux", "$answers", function ($stateParams, $questions, async, $q, $sections, _, $lists, $redux, $answers) {
                         var sectionId = $stateParams.idSection;
                         var deferred = $q.defer();
                         async.waterfall([
@@ -478,6 +478,30 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 
                               }, function (err) {
                                  cb(err, questionCollection);
                               });
+                           },
+                           function (questions, cb) {
+                              var application = $redux.getAction('selectedApplication');
+                              var section = _.find(_.get(application, 'solution'), function (item) {
+                                 return item.section = sectionId;
+                              });
+                              var answersCollection = [];
+                              async.eachSeries(_.get(section, 'answers'), function (item, cbInner) {
+                                 $answers
+                                    .get(item)
+                                    .then(function (answer) {
+                                       answersCollection.push(answer);
+                                       cbInner();
+                                    })
+                                    .catch(cbInner);
+                              }, function (err) {
+                                 var questionsWithAnswers = _.map(questions, function (item) {
+                                    var answer = _.find(answersCollection, function (itemAnswer) {
+                                       return itemAnswer.question === item._id;
+                                    });
+                                    return _.set(item, 'answer', answer);
+                                 });
+                                 cb(err, questionsWithAnswers);
+                              });
                            }
                         ], function (err, result) {
                            if (err) {
@@ -488,6 +512,234 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 
                         });
                         return deferred.promise;
                      }]
+                  }
+               }
+            }
+         })
+
+         .state('app.alerts', {
+            url: '/alerts',
+            views: {
+               menuContent: {
+                  templateUrl: 'templates/alerts/lists.html',
+                  controller: 'alertsCtlr',
+                  controllerAs: 'vm',
+                  resolve: {
+                     alerts: ['$redux', '$alerts', function ($redux, $alerts) {
+                        var location = $redux.getAction('selectedLocation');
+                        return $alerts
+                           .find({
+                              selector: {
+                                 programLocation: _.get(location, '_id')
+                              }
+                           });
+                     }]
+                  }
+               }
+            }
+         })
+
+         .state('app.alert', {
+            url: '/alert',
+            views: {
+               menuContent: {
+                  templateUrl: 'templates/alerts/details.html',
+                  controller: 'alertDetailsCtlr',
+                  controllerAs: 'vm',
+                  resolve: {
+                     alert: ["$redux", function ($redux) {
+                        return $redux.getAction('selectedAlert');
+                     }]
+                  }
+               }
+            }
+         })
+
+         .state('app.methodological', {
+            url: '/methodological',
+            views: {
+               menuContent: {
+                  templateUrl: 'templates/methodological/sessions.html',
+                  controller: 'methodologicalActivitiesCtlr',
+                  controllerAs: 'vm',
+                  resolve: {
+                     activities: [
+                        "$q",
+                        '$redux',
+                        '$program_locations',
+                        'async',
+                        'activitySchedules',
+                        'listServices',
+                        'sessionServices',
+                        'moment',
+                        function ($q, $redux, $program_locations, async, activitySchedules, listServices, sessionServices, moment) {
+                           var deferred = $q.defer();
+                           async.waterfall([
+                              //get location from program state
+                              function (cb) {
+                                 var location = $redux.getAction('selectedLocation');
+                                 $program_locations.get(location._id)
+                                    .then(function (locationDb) {
+                                       cb(null, locationDb);
+                                    })
+                                    .catch(function (err) {
+                                       cb(err);
+                                    });
+                              },
+                              function (location, cb) {
+                                 var selectedYear = 2015;
+                                 var activities = _.map(_.get(location, 'activities'), function (activity) {
+                                    var activitiesFilter = _.filter(activity.schedules, function (item) {
+                                       return _.isEqual(item.year, selectedYear);
+                                    });
+                                    return _.map(activitiesFilter, function (filtered) {
+                                       return _.assign(_.clone(filtered), {
+                                          activityId: activity._id,
+                                          activityType: activity.activityType,
+                                          activityName: activity.activityName
+                                       });
+                                    })
+                                 });
+                                 cb(null, _.flatten(activities));
+                              },
+                              function (activities, cb) {
+                                 var activitiesCollection = [];
+                                 async.each(activities, function (activity, cbInner) {
+                                    activitySchedules.findByActivity(activity.reference)
+                                       .then(function (data) {
+                                          activitiesCollection.push(_.set(activity, 'schedule', data.docs));
+                                          cbInner(null, data);
+                                       })
+                                       .catch(function (err) {
+                                          cbInner(err);
+                                       });
+                                 }, function (err) {
+                                    if (err) {
+                                       cb(err);
+                                    } else {
+                                       cb(null, activitiesCollection);
+                                    }
+                                 });
+                              },
+                              function (activities, cb) {
+                                 var activitiesCollection = [];
+                                 async.each(activities, function (activity, cbInner) {
+                                    async.parallel([
+                                       //activityName
+                                       function (cbParallel) {
+                                          listServices
+                                             .getListValueById(activity.activityName)
+                                             .then(function (data) {
+                                                cbParallel(null, data);
+                                             })
+                                             .catch(function (reason) {
+                                                cbParallel(reason);
+                                             });
+                                       },
+                                       //activityType
+                                       function (cbParallel) {
+                                          listServices
+                                             .getListValueById(activity.activityType)
+                                             .then(function (data) {
+                                                cbParallel(null, data);
+                                             })
+                                             .catch(function (reason) {
+                                                cbParallel(reason);
+                                             });
+                                       }
+                                    ], function (err, data) {
+                                       if (err) {
+                                          cbInner(err);
+                                       } else {
+                                          activitiesCollection.push(_.assign(_.clone(activity), {
+                                             activityName: data[0],
+                                             activityType: data[1]
+                                          }));
+                                          cbInner();
+                                       }
+                                    });
+                                 }, function (err) {
+                                    if (err) {
+                                       cb(err);
+                                    } else {
+                                       cb(null, activitiesCollection);
+                                    }
+                                 });
+                              },
+                              function (activities, cb) {
+                                 var sessionsCollection = [];
+                                 _.each(activities, function (activity) {
+                                    var activityName = _.get(activity, 'activityName.value');
+                                    var activityType = _.get(activity, 'activityType.value');
+                                    var activityNameID = _.get(activity, 'activityType._id');
+                                    var activityTypeID = _.get(activity, 'activityName._id');
+                                    _.each(activity.schedule, function (schedule) {
+                                       _.each(schedule.months, function (scheduleMonth) {
+                                          var monthName = scheduleMonth.name;
+                                          _.each(scheduleMonth.sessions, function (session) {
+                                             var objectSession = _.assign({}, {
+                                                monthName: monthName,
+                                                activityName: activityName,
+                                                activityType: activityType,
+                                                activityNameID: activityNameID,
+                                                activityTypeID: activityTypeID,
+                                                sessionId: session
+                                             });
+                                             sessionsCollection.push(objectSession);
+                                          });
+                                       });
+                                    });
+                                 });
+                                 cb(null, sessionsCollection);
+                              },
+                              function (sessions, cb) {
+                                 var sessionsCollection = [];
+                                 async.each(sessions, function (session, cbInner) {
+                                    sessionServices.getSession(session.sessionId)
+                                       .then(function (data) {
+                                          sessionsCollection.push(_.set(session, 'sessionData', data));
+                                          cbInner();
+                                       })
+                                       .catch(function (reason) {
+                                          cbInner(reason);
+                                       });
+                                 }, function (err) {
+                                    if (err) {
+                                       cb(err);
+                                    } else {
+                                       cb(null, sessionsCollection);
+                                    }
+                                 });
+                              },
+                              function (sessions, cb) {
+                                 moment.locale('es');
+                                 var months = moment.months();
+                                 var groupedMonths = _.groupBy(sessions, 'monthName');
+                                 var collection = [];
+                                 _.forOwn(groupedMonths, function (value, key) {
+                                    collection.push(_.assign({}, {
+                                       month: key,
+                                       sessions: value
+                                    }));
+                                 });
+                                 var sorted = _.sortBy(collection, function (session) {
+                                    return _.indexOf(months, _.toLower(session.month));
+                                 });
+                                 cb(null, sorted);
+                              },
+                              function (activities, cb) {
+                                 cb(null, activities[0]);
+                              }
+                           ], function (err, activities) {
+                              if (err) {
+                                 console.log(err);
+                                 deferred.reject(err);
+                              } else {
+                                 deferred.resolve(activities);
+                              }
+                           });
+                           return deferred.promise;
+                        }]
                   }
                }
             }

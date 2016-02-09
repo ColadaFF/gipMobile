@@ -1,0 +1,16 @@
+<ion-modal-view>
+   <ion-header-bar>
+      <h1 class="title">Reportar detalles de sesión</h1>
+      <button class="button button-positive" ng-click="hideModal()">Cerrar</button>
+   </ion-header-bar>
+   <ion-content>
+      <form name="formAlertUpdate" ng-submit="saveUpdate()">
+         <formly-form model="model" fields="fields">
+            <button type="submit" class="button button-block button-positive"
+                    ng-disabled="formAlertUpdate.$invalid">
+               Guardar
+            </button>
+         </formly-form>
+      </form>
+   </ion-content>
+</ion-modal-view>

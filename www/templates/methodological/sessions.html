@@ -1,0 +1,30 @@
+<ion-view view-title="Seguimiento Metodológico">
+   <ion-content>
+      <div class="list card">
+         <div class="item item-divider">
+            Actividades realizadas
+         </div>
+         <a href="#" class="item item-icon-left item-icon-right" ng-repeat="session in vm.sessionsDone"
+            ng-click="vm.addReportData(session)">
+            <i class="icon ion-android-done-all"></i>
+            <h2>{{session.sessionData.name}}</h2>
+            <p>Actividad: {{session.activityName}}</p>
+            <p>Tipo: {{session.activityType}}</p>
+         </a>
+      </div>
+
+      <div class="list card">
+         <div class="item item-divider">
+            Actividades no realizadas
+         </div>
+         <a href="#" class="item item-icon-left item-icon-right" ng-repeat="session in vm.sessionsDismissed" disabled>
+            <i class="icon ion-close-circled"></i>
+            <h2>{{session.sessionData.name}}</h2>
+            <p>Actividad: {{session.activityName}}</p>
+            <p>Tipo: {{session.activityType}}</p>
+         </a>
+      </div>
+
+      <button  class="button button-block button-positive" ng-click="vm.saveMethodologicalTracing()"> Guardar seguimiento</button>
+   </ion-content>
+</ion-view>
