@@ -2,6 +2,17 @@ angular.module('sigipFormly', ['formly', 'ionic-datepicker', 'ngMask'])
    .run(function (formlyConfig) {
       var templateSelect = "<select ng-model='model[options.key]'></select>";
 
+      function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+      function select(options) {
+         var ngOptions = options.templateOptions.ngOptions || "option[to.valueProp || 'value'] as option[to.labelProp || 'name'] group by option[to.groupProp || 'group'] for option in to.options";
+         return {
+            ngModelAttrs: _defineProperty({}, ngOptions, {
+               value: options.templateOptions.optionsAttr || 'ng-options'
+            })
+         };
+      }
+
       formlyConfig.setWrapper({
          name: 'labelSelect',
          templateUrl: 'js/formly/wrappers/labelSelect.html'
@@ -41,16 +52,7 @@ angular.module('sigipFormly', ['formly', 'ionic-datepicker', 'ngMask'])
       formlyConfig.setType({
          name: 'select',
          template: templateSelect,
-         defaultOptions(options) {
-            var ngOptions = options.templateOptions.ngOptions || `option[to.valueProp || 'value'] as option[to.labelProp || 'name'] group by option[to.groupProp || 'group'] for option in to.options`;
-            return {
-               ngModelAttrs: {
-                  [ngOptions]: {
-                     value: options.templateOptions.optionsAttr || 'ng-options'
-                  }
-               }
-            };
-         },
+         defaultOptions: select,
          wrapper: 'labelSelect'
       });
 

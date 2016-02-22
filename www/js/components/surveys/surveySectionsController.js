@@ -7,7 +7,7 @@
       vm.viewSection = viewSection;
 
       function viewSection($event, section) {
-         $event.preventDefault();
+         console.log(arguments);
          $redux.setAction("selectedSection", section);
          $state.go('app.surveyQuestions', {idSection: _.get(section, '_id')});
       }

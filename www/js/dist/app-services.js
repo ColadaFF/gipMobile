@@ -124,7 +124,7 @@ angular.module('sigip').factory('loginFactory', function ($resource, API_URL, $w
       }
 
       function deleteAction(action) {
-         Storage.delete(action);
+         Storage = Storage.delete(action);
       }
 
 
@@ -221,8 +221,8 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
    ngModule.constant('async', async);
    ngModule.constant('Immutable', Immutable);
    ngModule.constant('$ObjectId', ObjectID);
-   ngModule.constant("API_URL", 'http://52.3.24.46:3000/api');
-   ngModule.constant("API_HOST", 'http://52.3.24.46:3000');
+   ngModule.constant("API_URL", 'http://52.3.24.46:80/api');
+   ngModule.constant("API_HOST", 'http://52.3.24.46:80');
    ngModule.constant("COUCHDB_URL", 'http://52.23.181.232');
 }());
 
@@ -371,7 +371,9 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
 
                   $location_participants
                      .find({
-                        selector: {programLocation: locationID}
+                        selector: {
+                           programLocation: locationID
+                        }
                      })
                      .then(function (data) {
                         cb(null, _.get(data, 'docs'))
@@ -388,7 +390,14 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
                            participantCollection.push(mergeParticipantAndContact);
                            cbInner();
                         })
-                        .catch(cbInner);
+                        .catch(function (err) {
+                           if(err.status === 404){
+                              cbInner();
+                           }else{
+
+                              cbInner(err);
+                           }
+                        });
                   }, function (reason) {
                      cb(reason, participantCollection);
                   });
@@ -673,13 +682,26 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
                }).catch(cb);
             },
             function (cb) {
-               $surveys.createIndex({
-                  index: {
-                     fields: ['programId', '_id']
+               async.series([
+                  function (cbInner) {
+                     $surveys.createIndex({
+                        index: {
+                           fields: ['programId', '_id']
+                        }
+                     }).then(function (result) {
+                        cbInner(null, result);
+                     }).catch(cbInner);
+                  },
+                  function (cbInner) {
+                     $surveys.createIndex({
+                        index: {
+                           fields: ['programId', 'deleted']
+                        }
+                     }).then(function (result) {
+                        cbInner(null, result);
+                     }).catch(cbInner);
                   }
-               }).then(function (result) {
-                  cb(null, result);
-               }).catch(cb);
+               ], cb);
             },
             function (cb) {
                $sections.createIndex({
@@ -987,26 +1009,27 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
                            attachments: true
                         }, function (err, docs) {
                            if (err) {
-                              cb(err);
+                              cbParticipants(err);
                            } else {
-                              var participants = _.map(_.get(docs, 'rows'), function (innerItem) {
-                                 return _.get(innerItem, 'doc.id');
-                              });
-                              async.each(participants, function (participant, cbInner) {
-                                 $contacts
-                                    .sync(COUCHDB_URL + "/sigip_contacts", {
-                                       retry: true,
-                                       filter: 'contacts/byId',
-                                       query_params: {"id": participant}
-                                    })
-                                    .on('change', function (info) {
-                                       $log.info(info);
-                                    })
-                                    .on('complete', function (info) {
-                                       cbInner();
-                                    })
-                                    .on('error', cbInner);
-                              }, cbParticipants)
+                              var participants = _
+                                 .chain(_.get(docs, 'rows'))
+                                 .map(function (innerItem) {
+                                    return _.get(innerItem, 'doc.id');
+                                 })
+                                 .filter(function (item) {
+                                    return (_.isUndefined(item) || _.isNull(item)) === false;
+                                 })
+                                 .value();
+                              $log.info(participants);
+                              $contacts
+                                 .sync(COUCHDB_URL + "/sigip_contacts", {
+                                    retry: true,
+                                    doc_ids: participants
+                                 })
+                                 .then(function (result) {
+                                    cbParticipants(null, result);
+                                 })
+                                 .catch(cbParticipants);
                            }
                         });
                   },
@@ -1019,26 +1042,28 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
                            if (err) {
                               cb(err);
                            } else {
-                              var relatives = _.map(_.get(docs, 'rows'), function (innerItem) {
-                                 return _.map(_.get(innerItem, 'doc.relatives'), function (relative) {
-                                    return _.get(relative, 'id');
+                              var relatives =
+                                 _
+                                    .chain(docs)
+                                    .get('rows')
+                                    .map(function (innerItem) {
+                                       return _.map(_.get(innerItem, 'doc.relatives'), function (relative) {
+                                          return _.get(relative, 'id');
+                                       })
+                                    })
+                                    .flatten()
+                                    .value();
+
+                              $log.info(relatives, 'relatives');
+                              $contacts
+                                 .sync(COUCHDB_URL + "/sigip_contacts", {
+                                    retry: true,
+                                    doc_ids: _.flatten(relatives)
                                  })
-                              });
-                              async.each(_.flatten(relatives), function (relative, cbInner) {
-                                 $contacts
-                                    .sync(COUCHDB_URL + "/sigip_contacts", {
-                                       retry: true,
-                                       filter: 'contacts/byId',
-                                       query_params: {"id": relative}
-                                    })
-                                    .on('change', function (info) {
-                                       $log.info(info);
-                                    })
-                                    .on('complete', function (info) {
-                                       cbInner();
-                                    })
-                                    .on('error', cbInner);
-                              }, cbParticipants)
+                                 .then(function (result) {
+                                    cbParticipants(null, result);
+                                 })
+                                 .catch(cbParticipants);
                            }
                         });
                   }
@@ -1272,71 +1297,75 @@ ngModule.factory("AuthInterceptor", function (AuthTokenFactory) {
                            if (err) {
                               cb(err);
                            } else {
-                              var questions = _.map(_.get(docs, 'rows'), function (innerItem) {
-                                 return _.get(innerItem, 'doc.questions');
-                              });
-                              async.each(_.flatten(questions), function (question, cbInner) {
-                                 $questions
-                                    .sync(COUCHDB_URL + "/sigip_questions", {
-                                       retry: true,
-                                       filter: 'questions/bySection',
-                                       query_params: {"question": question}
-                                    })
-                                    .on('change', function (info) {
-                                       $log.info(info);
-                                    })
-                                    .on('complete', function (info) {
-                                       cbInner();
-                                    })
-                                    .on('error', cbInner);
-                              }, cbSurveys)
+                              var questions = _
+                                 .chain(_.get(docs, 'rows'))
+                                 .map(function (innerItem) {
+                                    return _.get(innerItem, 'doc.questions');
+                                 })
+                                 .filter(function (item) {
+                                    return !_.isUndefined(item);
+                                 })
+                                 .flatten()
+                                 .value();
+                              $questions
+                                 .sync(COUCHDB_URL + "/sigip_questions", {
+                                    retry: true,
+                                    doc_ids: questions
+                                 })
+                                 .on('change', function (info) {
+                                    $log.info(info);
+                                 })
+                                 .on('complete', function (info) {
+                                    cbSurveys();
+                                 })
+                                 .on('error', cbSurveys);
                            }
                         });
                   }/*,
-                  function (cbAnswers) {
-                     async.waterfall([
-                        function (cbInnerAnswers) {
-                           $anonInstances
-                              .allDocs({
-                                 include_docs: true,
-                                 attachments: true
-                              }, function (err, instances) {
-                                 if (err) {
-                                    cbAnswers(err);
-                                 } else {
-                                    var answers = _
-                                       .chain(instances.rows)
-                                       .map(function (item) {
-                                          return _.get(item, 'doc.solution');
-                                       })
-                                       .flatten()
-                                       .map(function (item) {
-                                          return _.get(item, 'answers');
-                                       })
-                                       .flatten()
-                                       .filter(function (item) {
-                                          return !_.isUndefined(item);
-                                       })
-                                       .value();
-                                    cbInnerAnswers(null, answers)
-                                 }
-                              });
-                        },
-                        function (answers, cbInnerAnswers) {
-                           $answers
-                              .sync(COUCHDB_URL + "/sigip_answers", {
-                                 retry: true,
-                              })
-                              .on('change', function (info) {
-                                 $log.info(info);
-                              })
-                              .on('complete', function (info) {
-                                 cbInnerAnswers();
-                              })
-                              .on('error', cbInnerAnswers);
-                        }
-                     ], cbAnswers);
-                  }*/
+                   function (cbAnswers) {
+                   async.waterfall([
+                   function (cbInnerAnswers) {
+                   $anonInstances
+                   .allDocs({
+                   include_docs: true,
+                   attachments: true
+                   }, function (err, instances) {
+                   if (err) {
+                   cbAnswers(err);
+                   } else {
+                   var answers = _
+                   .chain(instances.rows)
+                   .map(function (item) {
+                   return _.get(item, 'doc.solution');
+                   })
+                   .flatten()
+                   .map(function (item) {
+                   return _.get(item, 'answers');
+                   })
+                   .flatten()
+                   .filter(function (item) {
+                   return !_.isUndefined(item);
+                   })
+                   .value();
+                   cbInnerAnswers(null, answers)
+                   }
+                   });
+                   },
+                   function (answers, cbInnerAnswers) {
+                   $answers
+                   .sync(COUCHDB_URL + "/sigip_answers", {
+                   retry: true,
+                   })
+                   .on('change', function (info) {
+                   $log.info(info);
+                   })
+                   .on('complete', function (info) {
+                   cbInnerAnswers();
+                   })
+                   .on('error', cbInnerAnswers);
+                   }
+                   ], cbAnswers);
+                   }*/
                ], cb);
             },
             function (results, cb) {

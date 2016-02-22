@@ -7,12 +7,11 @@
       vm.surveyIcon = surveyIcon;
       vm.viewApplication = viewApplication;
 
-      function viewApplication(application) {
-         $redux.setAction("selectedApplication", application);
+      function viewApplication() {
+         var survey = $redux.getAction('selectedSurvey');
          $state.go('app.surveySections', {
-            "_id": application.survey
+            "_id": survey._id
          });
-         console.log(application);
       }
 
       function surveyIcon(survey) {

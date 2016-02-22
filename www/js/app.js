@@ -24,7 +24,8 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 
       $config.indexAll().then($log.info, $log.error);
    })
 
-   .config(function ($stateProvider, $urlRouterProvider) {
+   .config(function ($stateProvider, $urlRouterProvider, $ionicConfigProvider) {
+      $ionicConfigProvider.tabs.position('bottom');
       $stateProvider
 
          .state('app', {
@@ -375,7 +376,10 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 
                         var location = $redux.getAction('selectedLocation');
                         return $surveys.find({
                            selector: {
-                              programId: _.get(location, 'program._id', _.get(location, 'program', ''))
+                              programId: _.get(location, 'program._id', _.get(location, 'program', '')),
+                              deleted: {
+                                 $ne: true
+                              }
                            }
                         });
                      }]
@@ -478,33 +482,34 @@ angular.module('sigip', ['ionic', 'sigip.controllers', 'formly', 'sigipFormly', 
                               }, function (err) {
                                  cb(err, questionCollection);
                               });
-                           },
-                           function (questions, cb) {
-                              var application = $redux.getAction('selectedApplication');
-                              var section = _.find(_.get(application, 'solution'), function (item) {
-                                 return item.section = sectionId;
-                              });
-                              var answersCollection = [];
-                              async.eachSeries(_.get(section, 'answers'), function (item, cbInner) {
-                                 $answers
-                                    .get(item)
-                                    .then(function (answer) {
-                                       answersCollection.push(answer);
-                                       cbInner();
-                                    })
-                                    .catch(cbInner);
-                              }, function (err) {
-                                 var questionsWithAnswers = _.map(questions, function (item) {
-                                    var answer = _.find(answersCollection, function (itemAnswer) {
-                                       return itemAnswer.question === item._id;
-                                    });
-                                    return _.set(item, 'answer', answer);
-                                 });
-                                 cb(err, questionsWithAnswers);
-                              });
-                           }
+                           }/*,
+                            function (questions, cb) {
+                            var application = $redux.getAction('selectedApplication');
+                            var section = _.find(_.get(application, 'solution'), function (item) {
+                            return item.section = sectionId;
+                            });
+                            var answersCollection = [];
+                            async.eachSeries(_.get(section, 'answers'), function (item, cbInner) {
+                            $answers
+                            .get(item)
+                            .then(function (answer) {
+                            answersCollection.push(answer);
+                            cbInner();
+                            })
+                            .catch(cbInner);
+                            }, function (err) {
+                            var questionsWithAnswers = _.map(questions, function (item) {
+                            var answer = _.find(answersCollection, function (itemAnswer) {
+                            return itemAnswer.question === item._id;
+                            });
+                            return _.set(item, 'answer', answer);
+                            });
+                            cb(err, questionsWithAnswers);
+                            });
+                            }*/
                         ], function (err, result) {
                            if (err) {
+                              console.log(err);
                               deferred.reject(err);
                            } else {
                               deferred.resolve(result);

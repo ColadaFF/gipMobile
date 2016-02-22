@@ -1,9 +1,11 @@
 <ion-view view-title="Aplicaciones" cache-view="false">
    <ion-content>
       <sigip-no-location></sigip-no-location>
+      <button class="button button-block button-positive" ng-click="vm.viewApplication()">
+         Aplicar encuesta
+      </button>
       <div class="list card">
-         <a href="#" class="item item-icon-right" ng-repeat="instance in vm.instances"
-            ng-click="vm.viewApplication(instance)">
+         <a href="#" class="item item-icon-right" ng-repeat="instance in vm.instances">
             <p>Fecha: {{instance.modifiedDate}}</p>
             <p>Estado: {{vm.getStatusLabel(instance.status)}}</p>
             <!--<i class="icon ion-checkmark-circled" ng-if="vm.checkSelectedLocation(location)"></i> -->

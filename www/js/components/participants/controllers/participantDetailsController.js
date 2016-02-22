@@ -1,6 +1,6 @@
 (function () {
    "use strict";
-   function participantDetailsController(listServices, $redux, lists, Sanitize$) {
+   function participantDetailsController(listServices, $redux, lists, Sanitize$, $location_participants, $log, $contacts, $ObjectId, $$messages, $state) {
       var vm = this,
          selectDefaultValidator = {
             selectedDefault: {
@@ -55,7 +55,7 @@
          currentParticipant = $redux.getAction('selectedParticipant'),
          contactModel = _.get(currentParticipant, 'id', {});
       vm.model = {
-         participant: _.set(currentParticipant, 'typeParticipant', _.get(currentParticipant, 'type.key')),
+         participant: currentParticipant ? _.set(currentParticipant, 'typeParticipant', _.get(currentParticipant, 'type.key')) : {},
          contact: Sanitize$.cleanModel(contactModel)
       };
       vm.relatives = _.get(currentParticipant, 'id.relatives', []);
@@ -466,12 +466,52 @@
          }
       ];
 
-      console.log($redux.getState());
       vm.saveModel = function () {
-         console.log(vm.model);
+         if (_.keys(currentParticipant) < 1) {
+            var contactID = $ObjectId.generate();
+            var participantId = $ObjectId.generate();
+            var contactModel = _.set(vm.model.contact, '_id', contactID);
+            var location = $redux.getAction('selectedLocation');
+            var participantModel = _.clone(vm.model.participant);
+            console.log(contactModel);
+            $contacts
+               .put(contactModel)
+               .then(function (responseContact) {
+                  $log.info(responseContact);
+                  $location_participants
+                     .put(_.assign(participantModel, {
+                        'id': contactID,
+                        '_id': participantId,
+                        'programLocation': location._id
+                     }))
+                     .then(function (response) {
+                        $$messages.simpleMessage("Participante creado correctamente");
+                        $log.info(response);
+                        console.log(participantModel);
+                        $state.go('app.participants');
+                     })
+                     .catch($log.error);
+               })
+               .catch($log.error);
+         } else {
+            $contacts
+               .put(vm.model.contact)
+               .then(function (responseContact) {
+                  $log.info(responseContact);
+                  $location_participants
+                     .put(_.set(vm.model.participant, 'id', currentParticipant._id))
+                     .then(function (response) {
+                        $$messages.simpleMessage("Participante creado correctamente");
+                        $log.info(response);
+                        $state.go('app.participants');
+                     })
+                     .catch($log.error);
+               })
+               .catch($log.error);
+         }
       };
    }
 
-   participantDetailsController.$inject = ["listServices", "$redux", "lists", 'Sanitize$'];
+   participantDetailsController.$inject = ["listServices", "$redux", "lists", 'Sanitize$', '$location_participants', '$log', '$contacts', '$ObjectId', '$$messages', '$state'];
    angular.module("sigip.controllers").controller("participantDetails", participantDetailsController)
 }());

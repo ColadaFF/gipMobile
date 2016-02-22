@@ -6,7 +6,7 @@
             <form name="vm.formParticipant" ng-submit="vm.saveModel()">
                <formly-form model="vm.model.participant" fields="vm.fieldsParticipant">
                   <button type="submit" class="button button-block button-positive"
-                          ng-disabled="vm.formParticipant.$invalid">
+                          ng-disabled="vm.formParticipant.$invalid || vm.formContact.$invalid">
                      Guardar
                   </button>
                </formly-form>

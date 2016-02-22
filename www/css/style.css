@@ -3,6 +3,14 @@ img.landing-logo {
   height: auto;
   margin-left: 25%;
   margin-top: 25%;
+   max-width:300px;
+}
+
+@media screen and (min-width: 700px)  {
+   img.landing-logo {
+      margin-left: 37% !important;
+      margin-top: 15%;
+   }
 }
 
 .panel-has-header{

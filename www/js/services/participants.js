@@ -29,7 +29,9 @@
 
                   $location_participants
                      .find({
-                        selector: {programLocation: locationID}
+                        selector: {
+                           programLocation: locationID
+                        }
                      })
                      .then(function (data) {
                         cb(null, _.get(data, 'docs'))
@@ -46,7 +48,14 @@
                            participantCollection.push(mergeParticipantAndContact);
                            cbInner();
                         })
-                        .catch(cbInner);
+                        .catch(function (err) {
+                           if(err.status === 404){
+                              cbInner();
+                           }else{
+
+                              cbInner(err);
+                           }
+                        });
                   }, function (reason) {
                      cb(reason, participantCollection);
                   });

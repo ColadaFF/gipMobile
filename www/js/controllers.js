@@ -19,11 +19,11 @@ angular.module('sigip.controllers', [])
 
       function logout() {
          syncServices
-            .deleteUserFormDb()
+            .cleanDbs()
             .then(function () {
                $redux.deleteAction('loggedUser');
-               modelLogin.modal.show();
                $scope.loggedIn = false;
+               modelLogin.modal.show();
             })
             .catch(function (reason) {
                $$messages.simpleMessage("Ocurrió un error inesperado, por favor, intentelo más tarde.");
@@ -139,7 +139,8 @@ angular.module('sigip.controllers', [])
 
       // Create the login modal that we will use later
       $ionicModal.fromTemplateUrl('templates/login.html', {
-         scope: modelLogin
+         scope: modelLogin,
+         backdropClickToClose: false
       }).then(function (modal) {
          modelLogin.modal = modal;
       });

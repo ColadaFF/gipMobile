@@ -171,13 +171,26 @@
                }).catch(cb);
             },
             function (cb) {
-               $surveys.createIndex({
-                  index: {
-                     fields: ['programId', '_id']
+               async.series([
+                  function (cbInner) {
+                     $surveys.createIndex({
+                        index: {
+                           fields: ['programId', '_id']
+                        }
+                     }).then(function (result) {
+                        cbInner(null, result);
+                     }).catch(cbInner);
+                  },
+                  function (cbInner) {
+                     $surveys.createIndex({
+                        index: {
+                           fields: ['programId', 'deleted']
+                        }
+                     }).then(function (result) {
+                        cbInner(null, result);
+                     }).catch(cbInner);
                   }
-               }).then(function (result) {
-                  cb(null, result);
-               }).catch(cb);
+               ], cb);
             },
             function (cb) {
                $sections.createIndex({

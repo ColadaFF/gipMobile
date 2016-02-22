@@ -20,7 +20,7 @@
       }
 
       function deleteAction(action) {
-         Storage.delete(action);
+         Storage = Storage.delete(action);
       }
 
 

@@ -5,6 +5,7 @@
       vm.getAge = getAge;
       vm.getStatusLabel = getStatusLabel;
       vm.selectParticipant = selectParticipant;
+      vm.createParticipant = createParticipant;
       if (participants === false) {
          vm.status = false;
       } else {
@@ -26,6 +27,12 @@
 
       function getStatusLabel(status) {
          return status === 'active' ? "Activo" : 'Inactivo';
+      }
+
+
+      function createParticipant() {
+         $redux.deleteAction('selectedParticipant');
+         $state.go('app.participant');
       }
    }
 
